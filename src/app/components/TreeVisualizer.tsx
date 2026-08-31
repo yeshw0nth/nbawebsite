@@ -68,13 +68,13 @@ export default function TreeVisualizer() {
   return (
     <div className={`relative group ${
       isFullscreen 
-        ? "fixed inset-0 z-[100] bg-white p-8 w-screen h-screen" 
-        : "w-full h-[calc(100vh-120px)] bg-zinc-50/50 rounded-xl border border-zinc-200 overflow-hidden shadow-inner"
+        ? "fixed inset-0 z-[100] bg-surface p-8 w-screen h-screen" 
+        : "w-full h-[calc(100vh-120px)] bg-surface-alt rounded-xl border border-border overflow-hidden shadow-inner"
     }`}>
       {isFullscreen && (
         <button 
           onClick={() => setIsFullscreen(false)}
-          className="absolute top-6 right-6 z-[110] p-2 bg-white border border-zinc-200 rounded-full shadow-md text-zinc-600 hover:text-zinc-900 transition-colors"
+          className="absolute top-6 right-6 z-[110] p-2 bg-surface border border-border rounded-full shadow-md text-muted hover:text-foreground transition-colors"
         >
           <X size={20} />
         </button>
@@ -90,11 +90,11 @@ export default function TreeVisualizer() {
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className={`absolute ${isFullscreen ? "top-6 right-20" : "top-4 right-4"} flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity`}>
-              <button onClick={() => zoomIn()} className="p-2 bg-white border border-zinc-200 rounded-md shadow-sm text-zinc-600 hover:text-zinc-900"><ZoomIn size={16} /></button>
-              <button onClick={() => zoomOut()} className="p-2 bg-white border border-zinc-200 rounded-md shadow-sm text-zinc-600 hover:text-zinc-900"><ZoomOut size={16} /></button>
-              <button onClick={() => resetTransform()} className="p-2 bg-white border border-zinc-200 rounded-md shadow-sm text-zinc-600 hover:text-zinc-900" title="Reset View"><Maximize2 size={16} /></button>
+              <button onClick={() => zoomIn()} className="p-2 bg-surface border border-border rounded-md shadow-sm text-muted hover:text-foreground"><ZoomIn size={16} /></button>
+              <button onClick={() => zoomOut()} className="p-2 bg-surface border border-border rounded-md shadow-sm text-muted hover:text-foreground"><ZoomOut size={16} /></button>
+              <button onClick={() => resetTransform()} className="p-2 bg-surface border border-border rounded-md shadow-sm text-muted hover:text-foreground" title="Reset View"><Maximize2 size={16} /></button>
               {!isFullscreen && (
-                <button onClick={() => setIsFullscreen(true)} className="p-2 bg-white border border-zinc-200 rounded-md shadow-sm text-indigo-600 hover:text-indigo-700 ml-2 font-medium text-xs">
+                <button onClick={() => setIsFullscreen(true)} className="p-2 bg-surface border border-border rounded-md shadow-sm text-accent hover:text-accent-hover ml-2 font-medium text-xs">
                   Expand View
                 </button>
               )}

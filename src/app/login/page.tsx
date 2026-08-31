@@ -8,11 +8,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white text-zinc-900 font-sans">
-      <div className="w-full max-w-sm p-8 border border-zinc-200 rounded-xl shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight mb-6 text-center text-zinc-900">
-          Dashboard Access
+      <div className="w-full max-w-md p-10 border border-zinc-200 rounded-xl shadow-sm">
+        <h1 className="text-xl font-semibold tracking-tight mb-8 text-center text-zinc-900">
+          NBA Accreditation Data Automation and Evidence Management System
         </h1>
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-5">
           <div>
             <label htmlFor="password" className="sr-only">Password</label>
             <input

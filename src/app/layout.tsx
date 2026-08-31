@@ -12,15 +12,19 @@ export const metadata: Metadata = {
   description: "Next.js App with Tailwind CSS",
 };
 
+import { ThemeProvider } from "@/app/components/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="flex h-full bg-white text-zinc-900 font-sans">
-        {children}
+    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="flex h-full bg-background text-foreground font-sans transition-colors duration-200">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronDown, Search, CheckCircle2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import guidelinesData from "@/data/guidelines.json";
 import { useProgress } from "@/context/ProgressContext";
 
@@ -342,13 +343,31 @@ export default function Sidebar() {
             })}
           </div>
 
-          <div className="p-4 border-t border-zinc-100 shrink-0 bg-zinc-50/50">
+          {/* Settings & Export */}
+          <div className="p-4 border-t border-zinc-100 shrink-0 bg-zinc-50/50 space-y-2">
+            <Link 
+              href="/settings"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-medium rounded-lg transition-colors shadow-sm"
+            >
+              System Settings
+            </Link>
             <button
               onClick={() => window.open("/export", "_blank")}
               className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Export SAR Audit
             </button>
+            <form action={async () => {
+              const { logoutAction } = await import('@/app/actions/auth');
+              await logoutAction();
+            }}>
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-2 border border-zinc-200 text-zinc-600 hover:text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg transition-colors"
+              >
+                Log Out
+              </button>
+            </form>
           </div>
         </div>
       </div>

@@ -12,18 +12,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ScoreProvider>
       <ProgressProvider>
-        <div className="flex h-screen w-full bg-zinc-50 overflow-hidden text-zinc-900 font-sans">
+        <div className="flex h-screen w-full bg-background overflow-hidden text-foreground font-sans">
           <CommandPalette />
-          <Suspense fallback={<div className="w-[320px] h-full border-r border-zinc-200 bg-white" />}>
+          <Suspense fallback={<div className="w-[320px] h-full border-r border-border bg-surface" />}>
             <Sidebar />
           </Suspense>
 
           {/* Main Content Pane */}
-          <main className="flex-1 min-w-0 bg-zinc-50 h-screen flex flex-col">
-            <header className="h-14 flex items-center px-6 border-b border-zinc-200 bg-zinc-50 shrink-0">
+          <main className="flex-1 min-w-0 bg-background h-screen flex flex-col">
+            <header className="h-14 flex items-center px-6 border-b border-border bg-background shrink-0">
               <Link 
                 href="/" 
-                className="text-zinc-500 hover:text-indigo-600 transition-colors flex items-center justify-center p-2 rounded-md hover:bg-zinc-100/50"
+                className="text-muted hover:text-accent transition-colors flex items-center justify-center p-2 rounded-md hover:bg-surface-alt"
                 title="Home / Dashboard"
               >
                 <Home size={20} />
