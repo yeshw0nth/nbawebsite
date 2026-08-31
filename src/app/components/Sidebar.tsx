@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronDown, Search, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, CheckCircle2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import guidelinesData from "@/data/guidelines.json";
 import { useProgress } from "@/context/ProgressContext";
@@ -14,24 +14,27 @@ type SubSubCriterion = {
     Evaluation_Guidelines: string;
     Exhibits_Context_to_be_Observed_Assessed: string;
   };
+  id: string;
 };
 
 type SubCriterion = {
   Title: string;
   Marks: number;
   "Sub-Sub-Criteria"?: SubSubCriterion[];
+  id: string;
 };
 
 type Criterion = {
   Criterion: string;
   Marks: number;
   "Sub-Criteria": SubCriterion[];
+  id: string;
 };
 
 const guidelines = guidelinesData as Criterion[];
 
-// Helper to flatten and search
-function matchesSearch(text: string, query: string) {
+function matchesSearch(text: string, query: string): boolean {
+  if (!text) return false;
   return text.toLowerCase().includes(query.toLowerCase());
 }
 
@@ -45,6 +48,63 @@ export default function Sidebar() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Hydration fix state
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Layout states
+  const [isOpen, setIsOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = mouseMoveEvent.clientX;
+        if (newWidth >= 260 && newWidth <= 600) {
+          setSidebarWidth(newWidth);
+        } else if (newWidth < 260) {
+          setSidebarWidth(260);
+        } else if (newWidth > 600) {
+          setSidebarWidth(600);
+        }
+      }
+    },
+    [isResizing]
+  );
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+  
+  // Prevent text selection while resizing
+  useEffect(() => {
+    if (isResizing) {
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
+    } else {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    }
+  }, [isResizing]);
 
   // On mount or when currentId changes, ensure parent is expanded
   useEffect(() => {
@@ -118,146 +178,180 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-[320px] border-r border-gray-200 bg-white overflow-hidden flex flex-col">
-      <div className="p-5 border-b border-gray-100 shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-medium tracking-tight text-[#171717]">Guidelines</h1>
-          <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{progressPercent}%</span>
-        </div>
-        
-        {/* Minimal Progress Bar */}
-        <div className="w-full bg-gray-100 h-1.5 rounded-full mb-4 overflow-hidden">
-          <div 
-            className="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out" 
-            style={{ width: `${progressPercent}%` }} 
-          />
-        </div>
-        
-        {/* Minimal Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search guidelines..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all text-[#171717] placeholder-gray-400"
-          />
+    <motion.div
+      initial={false}
+      animate={{ width: isOpen ? sidebarWidth : 0 }}
+      transition={{ duration: 0.15, ease: "easeInOut" }}
+      className="relative flex-shrink-0 border-r border-zinc-200 bg-white h-full z-40"
+    >
+      {/* Toggle Button - Enlarged circular pill on border */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="absolute top-4 -right-[18px] z-[60] w-9 h-9 flex items-center justify-center rounded-full border border-zinc-300 bg-white shadow-sm text-zinc-400 hover:text-indigo-600 transition-colors"
+        title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+      >
+        {isOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+      </button>
+
+      {/* Resize Handle - Active only when sidebar is open */}
+      {isOpen && (
+        <div 
+          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-indigo-400/50 transition-colors z-40"
+          onMouseDown={startResizing}
+        />
+      )}
+
+      {/* Clipping Wrapper - hides the content smoothly when width shrinks */}
+      <div className="overflow-hidden h-full w-full">
+        {/* Squish Prevention Wrapper - strictly locks dimensions */}
+        <div style={{ width: sidebarWidth }} className="h-full overflow-y-auto flex flex-col">
+          <div className="p-5 border-b border-gray-100 shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-xl font-medium tracking-tight text-[#171717]">Guidelines</h1>
+              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{isMounted ? progressPercent : 0}%</span>
+            </div>
+            
+            {/* Minimal Progress Bar */}
+            <div className="w-full bg-gray-100 h-1.5 rounded-full mb-4 overflow-hidden">
+              <div 
+                className="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${isMounted ? progressPercent : 0}%` }} 
+              />
+            </div>
+            
+            {/* Minimal Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search guidelines..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all text-[#171717] placeholder-gray-400"
+              />
+            </div>
+          </div>
+
+          <div className="p-3 flex-1">
+            {filteredTree.map((c, cIdx) => {
+              const cId = c.id;
+              const isExpanded = expanded[cId];
+              const isActive = currentId === cId;
+              
+              return (
+                <div key={cId} className="mb-2">
+                  <button
+                    onClick={(e) => {
+                      toggleExpand(cId, e);
+                      handleNodeClick(cId);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                      isActive ? "bg-indigo-50 text-indigo-600 font-medium" : "text-[#171717] hover:bg-[#F3F4F6]"
+                    }`}
+                  >
+                    <span className="shrink-0 text-gray-400">
+                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </span>
+                    <span className="truncate text-left flex-1" title={c.Criterion}>
+                      {c.Criterion}
+                    </span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-1 pb-2 pl-7 space-y-1">
+                          {c["Sub-Criteria"].map((s, sIdx) => {
+                            const sId = s.id;
+                            const isSExpanded = expanded[sId];
+                            const isSActive = currentId === sId;
+
+                            return (
+                              <div key={sId}>
+                                <button
+                                  onClick={(e) => {
+                                    toggleExpand(sId, e);
+                                    handleNodeClick(sId);
+                                  }}
+                                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                    isSActive
+                                      ? "bg-indigo-50 text-indigo-600 font-medium"
+                                      : "text-gray-600 hover:bg-[#F3F4F6] hover:text-[#171717]"
+                                  }`}
+                                >
+                                  <span className="shrink-0 text-gray-400">
+                                    {isSExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                  </span>
+                                  <span className="truncate text-left flex-1" title={s.Title}>
+                                    {s.Title}
+                                  </span>
+                                </button>
+
+                                <AnimatePresence initial={false}>
+                                  {isSExpanded && s["Sub-Sub-Criteria"] && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.15, ease: "easeInOut" }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="pt-1 pb-1 pl-7 space-y-1">
+                                        {s["Sub-Sub-Criteria"].map((ss, ssIdx) => {
+                                          const ssId = ss.id;
+                                          const isSsActive = currentId === ssId;
+
+                                          return (
+                                            <button
+                                              key={ssId}
+                                              onClick={() => handleNodeClick(ssId)}
+                                              className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between ${
+                                                isSsActive
+                                                  ? "bg-indigo-50 text-indigo-600 font-medium"
+                                                  : "text-gray-500 hover:bg-[#F3F4F6] hover:text-[#171717]"
+                                              }`}
+                                            >
+                                              <span className="line-clamp-2 pr-2" title={ss.Title}>
+                                                {ss.Title}
+                                              </span>
+                                              {isSubSubCompleted(ssId) && (
+                                                <CheckCircle2 size={14} className="text-indigo-600 shrink-0" />
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 border-t border-zinc-100 shrink-0 bg-zinc-50/50">
+            <button
+              onClick={() => window.open("/export", "_blank")}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+            >
+              Export SAR Audit
+            </button>
+          </div>
         </div>
       </div>
-      
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {filteredTree.map((criterion, cIdx) => {
-          const cId = `c${cIdx + 1}`;
-          const isExpanded = !!expanded[cId];
-          const isActive = currentId === cId;
-
-          return (
-            <div key={cId} className="flex flex-col">
-              <div 
-                className={`flex items-center justify-between w-full px-3 py-2.5 text-left rounded-md transition-colors font-medium text-sm group cursor-pointer ${
-                  isActive ? "bg-indigo-50 text-indigo-600" : "hover:bg-[#F3F4F6] text-[#171717]"
-                }`}
-                onClick={() => handleNodeClick(cId)}
-              >
-                <span className="truncate pr-2" title={criterion.Criterion}>
-                  {criterion.Criterion}
-                </span>
-                <button 
-                  onClick={(e) => toggleExpand(cId, e)}
-                  className={`shrink-0 p-1 rounded-sm transition-colors ${isActive ? "text-indigo-600 hover:bg-indigo-100" : "text-gray-400 hover:bg-gray-200 group-hover:text-gray-600"}`}
-                >
-                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-1 pb-2 pl-3 space-y-1 border-l border-gray-100 ml-4">
-                      {criterion["Sub-Criteria"].map((sub, sIdx) => {
-                        const sId = `${cId}-s${sIdx + 1}`;
-                        const isSubExpanded = !!expanded[sId];
-                        const isSubActive = currentId === sId;
-                        const hasSubSubs = sub["Sub-Sub-Criteria"] && sub["Sub-Sub-Criteria"].length > 0;
-
-                        return (
-                          <div key={sId} className="flex flex-col">
-                            <div 
-                              className={`flex items-center justify-between w-full px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
-                                isSubActive
-                                  ? "bg-indigo-50 text-indigo-600 font-medium"
-                                  : "text-gray-600 hover:bg-[#F3F4F6] hover:text-[#171717]"
-                              }`}
-                              onClick={() => handleNodeClick(sId)}
-                            >
-                              <span className="line-clamp-2 pr-2" title={sub.Title}>
-                                {sub.Title}
-                              </span>
-                              {hasSubSubs && (
-                                <button 
-                                  onClick={(e) => toggleExpand(sId, e)}
-                                  className={`shrink-0 p-1 rounded-sm transition-colors ${isSubActive ? "text-indigo-600 hover:bg-indigo-100" : "text-gray-400 hover:bg-gray-200"}`}
-                                >
-                                  {isSubExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                </button>
-                              )}
-                            </div>
-
-                            <AnimatePresence initial={false}>
-                              {hasSubSubs && isSubExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.15, ease: "easeInOut" }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="pt-1 pb-1 pl-3 space-y-1 border-l border-gray-100 ml-4">
-                                    {sub["Sub-Sub-Criteria"]!.map((ss, ssIdx) => {
-                                      const ssId = `${sId}-ss${ssIdx + 1}`;
-                                      const isSsActive = currentId === ssId;
-
-                                      return (
-                                        <button
-                                          key={ssId}
-                                          onClick={() => handleNodeClick(ssId)}
-                                          className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between ${
-                                            isSsActive
-                                              ? "bg-indigo-50 text-indigo-600 font-medium"
-                                              : "text-gray-500 hover:bg-[#F3F4F6] hover:text-[#171717]"
-                                          }`}
-                                        >
-                                          <span className="line-clamp-2 pr-2" title={ss.Title}>
-                                            {ss.Title}
-                                          </span>
-                                          {isSubSubCompleted(ssId) && (
-                                            <CheckCircle2 size={14} className="text-indigo-600 shrink-0" />
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </nav>
-    </aside>
+    </motion.div>
   );
 }

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import SubComponentsAccordion from "./SubComponentsAccordion";
+import RadialProgress from "@/app/components/RadialProgress";
+import FormulaCalculator from "@/app/components/calculators/FormulaCalculator";
 
 type SubSubCriterion = {
   Title: string;
@@ -119,15 +121,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
 
       <header className="mb-12 border-b border-gray-100 pb-8">
         {node.type === 'criterion' && (
-          <>
-            <div className="flex items-center justify-between mb-3 gap-6">
-              <h2 className="text-3xl font-semibold tracking-tight text-[#171717]">{(node.data as Criterion).Criterion}</h2>
-              <span className="bg-indigo-50 text-indigo-600 font-medium px-3 py-1 rounded-full text-sm shrink-0 mt-1">
-                {(node.data as Criterion).Marks} Marks
-              </span>
-            </div>
-            <p className="text-gray-500 text-base leading-relaxed">Overview of this primary criterion and its sub-components.</p>
-          </>
+          <RadialProgress criterionId={nodeId} title={(node.data as Criterion).Criterion} />
         )}
         
         {node.type === 'sub' && (
@@ -196,6 +190,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
 
         {node.type === 'sub' && (
           <div>
+            <FormulaCalculator nodeId={nodeId} maxMarks={(node.data as SubCriterion).Marks} />
             <h3 className="text-lg font-medium tracking-tight mb-4 text-[#171717]">Detailed Items</h3>
             <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white">
               {(node.data as SubCriterion)["Sub-Sub-Criteria"]?.map((ss, idx) => (

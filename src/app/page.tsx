@@ -1,38 +1,50 @@
+"use client";
+
+import { useState } from "react";
+import TreeVisualizer from "./components/TreeVisualizer";
+import { LayoutGrid, Network } from "lucide-react";
+
 export default function Home() {
+  const [view, setView] = useState<"split" | "tree">("tree");
+
   return (
-    <article>
-      <header className="mb-12 border-b border-gray-100 pb-8">
-        <h2 className="text-3xl font-semibold tracking-tight mb-3">Welcome to the Dashboard</h2>
-        <p className="text-gray-500">This is a clean, minimal interface using Inter.</p>
-      </header>
-
-      <section className="space-y-8">
+    <div className="animate-in fade-in duration-300">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
-          <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                <div>
-                  <p className="font-medium text-sm">Action item {i}</p>
-                  <p className="text-sm text-gray-500">Completed 2 hours ago</p>
-                </div>
-                <button className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                  View details
-                </button>
-              </div>
-            ))}
-          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 leading-tight">Dashboard Overview</h1>
+          <p className="text-zinc-500 mt-1">Explore the SAR framework visually or via the sidebar.</p>
         </div>
+        
+        <div className="flex items-center bg-zinc-100 p-1 rounded-lg border border-zinc-200 shadow-sm">
+          <button
+            onClick={() => setView("split")}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+              view === "split" ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+            }`}
+          >
+            <LayoutGrid size={16} />
+            Split View
+          </button>
+          <button
+            onClick={() => setView("tree")}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+              view === "tree" ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+            }`}
+          >
+            <Network size={16} />
+            Tree Map
+          </button>
+        </div>
+      </div>
 
-        <div>
-          <h3 className="text-lg font-medium mb-4 text-[#171717]">Select a Guideline</h3>
-          <div className="text-gray-600 text-base leading-relaxed space-y-4">
-            <p>
-              Please select an evaluation criterion from the sidebar to view its detailed guidelines, exhibits, and context to be observed.
-            </p>
-          </div>
+      {view === "tree" ? (
+        <TreeVisualizer />
+      ) : (
+        <div className="border border-zinc-200 border-dashed rounded-xl p-12 text-center bg-zinc-50/50">
+          <h2 className="text-lg font-medium text-zinc-900 mb-2">Select an item from the sidebar</h2>
+          <p className="text-zinc-500 text-sm">Navigate through the criteria using the sidebar to view details in Split View.</p>
         </div>
-      </section>
-    </article>
+      )}
+    </div>
   );
 }
