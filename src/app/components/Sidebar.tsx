@@ -39,7 +39,7 @@ function matchesSearch(text: string, query: string): boolean {
   return text.toLowerCase().includes(query.toLowerCase());
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const router = useRouter();
   const params = useParams();
   const currentId = params?.id as string | undefined;
@@ -57,7 +57,6 @@ export default function Sidebar() {
   }, []);
 
   // Layout states
-  const [isOpen, setIsOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -183,16 +182,8 @@ export default function Sidebar() {
       initial={false}
       animate={{ width: isOpen ? sidebarWidth : 0 }}
       transition={{ duration: 0.15, ease: "easeInOut" }}
-      className="relative flex-shrink-0 border-r border-zinc-200 bg-white h-full z-40"
+      className="relative flex-shrink-0 border-r border-border bg-surface h-full z-40"
     >
-      {/* Toggle Button - Enlarged circular pill on border */}
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute top-4 -right-[18px] z-[60] w-9 h-9 flex items-center justify-center rounded-full border border-zinc-300 bg-white shadow-sm text-zinc-400 hover:text-indigo-600 transition-colors"
-        title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-      >
-        {isOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-      </button>
 
       {/* Resize Handle - Active only when sidebar is open */}
       {isOpen && (
@@ -206,29 +197,29 @@ export default function Sidebar() {
       <div className="overflow-hidden h-full w-full">
         {/* Squish Prevention Wrapper - strictly locks dimensions */}
         <div style={{ width: sidebarWidth }} className="h-full overflow-y-auto flex flex-col">
-          <div className="p-5 border-b border-gray-100 shrink-0">
+          <div className="p-5 border-b border-border shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-xl font-medium tracking-tight text-[#171717]">Guidelines</h1>
-              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{isMounted ? progressPercent : 0}%</span>
+              <h1 className="text-xl font-medium tracking-tight text-foreground">Guidelines</h1>
+              <span className="text-xs font-medium text-accent bg-accent-subtle px-2 py-0.5 rounded-full">{isMounted ? progressPercent : 0}%</span>
             </div>
             
             {/* Minimal Progress Bar */}
-            <div className="w-full bg-gray-100 h-1.5 rounded-full mb-4 overflow-hidden">
+            <div className="w-full bg-surface-alt h-1.5 rounded-full mb-4 overflow-hidden">
               <div 
-                className="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out" 
+                className="bg-accent h-full rounded-full transition-all duration-500 ease-out" 
                 style={{ width: `${isMounted ? progressPercent : 0}%` }} 
               />
             </div>
             
             {/* Minimal Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
               <input
                 type="text"
                 placeholder="Search guidelines..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all text-[#171717] placeholder-gray-400"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-md bg-surface focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all text-foreground placeholder-muted"
               />
             </div>
           </div>
@@ -247,10 +238,10 @@ export default function Sidebar() {
                       handleNodeClick(cId);
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isActive ? "bg-indigo-50 text-indigo-600 font-medium" : "text-[#171717] hover:bg-[#F3F4F6]"
+                      isActive ? "bg-accent-subtle text-accent font-medium" : "text-foreground hover:bg-surface-alt"
                     }`}
                   >
-                    <span className="shrink-0 text-gray-400">
+                    <span className="shrink-0 text-muted">
                       {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </span>
                     <span className="truncate text-left flex-1" title={c.Criterion}>
@@ -267,7 +258,7 @@ export default function Sidebar() {
                         transition={{ duration: 0.15, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
-                        <div className="pt-1 pb-2 pl-7 space-y-1">
+                        <div className="pt-1 pb-2 pl-7 space-y-1 border-l-2 border-border/50 ml-4">
                           {c["Sub-Criteria"].map((s, sIdx) => {
                             const sId = s.id;
                             const isSExpanded = expanded[sId];
@@ -282,11 +273,11 @@ export default function Sidebar() {
                                   }}
                                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
                                     isSActive
-                                      ? "bg-indigo-50 text-indigo-600 font-medium"
-                                      : "text-gray-600 hover:bg-[#F3F4F6] hover:text-[#171717]"
+                                      ? "bg-accent-subtle text-accent font-medium"
+                                      : "text-muted hover:bg-surface-alt hover:text-foreground"
                                   }`}
                                 >
-                                  <span className="shrink-0 text-gray-400">
+                                  <span className="shrink-0 text-muted">
                                     {isSExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                   </span>
                                   <span className="truncate text-left flex-1" title={s.Title}>
@@ -303,7 +294,7 @@ export default function Sidebar() {
                                       transition={{ duration: 0.15, ease: "easeInOut" }}
                                       className="overflow-hidden"
                                     >
-                                      <div className="pt-1 pb-1 pl-7 space-y-1">
+                                      <div className="pt-1 pb-1 pl-7 space-y-1 border-l border-border/50 ml-4">
                                         {s["Sub-Sub-Criteria"].map((ss, ssIdx) => {
                                           const ssId = ss.id;
                                           const isSsActive = currentId === ssId;
@@ -314,15 +305,15 @@ export default function Sidebar() {
                                               onClick={() => handleNodeClick(ssId)}
                                               className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between ${
                                                 isSsActive
-                                                  ? "bg-indigo-50 text-indigo-600 font-medium"
-                                                  : "text-gray-500 hover:bg-[#F3F4F6] hover:text-[#171717]"
+                                                  ? "bg-accent-subtle text-accent font-medium"
+                                                  : "text-muted hover:bg-surface-alt hover:text-foreground"
                                               }`}
                                             >
                                               <span className="line-clamp-2 pr-2" title={ss.Title}>
                                                 {ss.Title}
                                               </span>
                                               {isSubSubCompleted(ssId) && (
-                                                <CheckCircle2 size={14} className="text-indigo-600 shrink-0" />
+                                                <CheckCircle2 size={14} className="text-accent shrink-0" />
                                               )}
                                             </button>
                                           );
@@ -344,16 +335,16 @@ export default function Sidebar() {
           </div>
 
           {/* Settings & Export */}
-          <div className="p-4 border-t border-zinc-100 shrink-0 bg-zinc-50/50 space-y-2">
+          <div className="p-4 border-t border-border shrink-0 bg-surface-alt/50 space-y-2">
             <Link 
               href="/settings"
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-surface border border-border hover:bg-surface-alt text-foreground text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               System Settings
             </Link>
             <button
               onClick={() => window.open("/export", "_blank")}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-foreground hover:opacity-90 text-background text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Export SAR Audit
             </button>
@@ -363,7 +354,7 @@ export default function Sidebar() {
             }}>
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-2 border border-zinc-200 text-zinc-600 hover:text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-2 border border-border text-muted hover:text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg transition-colors"
               >
                 Log Out
               </button>

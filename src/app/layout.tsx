@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "My App",
+  title: "NBA Accreditation Data Automation and Evidence Management System",
   description: "Next.js App with Tailwind CSS",
 };
 

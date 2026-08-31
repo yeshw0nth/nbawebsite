@@ -7,9 +7,9 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, null);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-zinc-900 font-sans">
-      <div className="w-full max-w-md p-10 border border-zinc-200 rounded-xl shadow-sm">
-        <h1 className="text-xl font-semibold tracking-tight mb-8 text-center text-zinc-900">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md p-10 border border-border bg-surface rounded-xl shadow-sm">
+        <h1 className="text-xl font-semibold tracking-tight mb-8 text-center text-foreground">
           NBA Accreditation Data Automation and Evidence Management System
         </h1>
         <form action={formAction} className="space-y-5">
@@ -20,7 +20,7 @@ export default function LoginPage() {
               name="password"
               type="password"
               placeholder="Enter shared password"
-              className="w-full px-4 py-2 text-sm border border-zinc-200 rounded-md focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors placeholder:text-zinc-400"
+              className="w-full px-4 py-2 text-sm border border-border rounded-md focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors bg-surface-alt text-foreground placeholder:text-muted"
               required
             />
           </div>
@@ -34,7 +34,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 text-sm"
+            className="w-full bg-accent hover:bg-accent-hover text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 text-sm shadow-sm"
           >
             {pending ? "Authenticating..." : "Submit"}
           </button>

@@ -11,15 +11,15 @@ export default function Home() {
     <div className="animate-in fade-in duration-300">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 leading-tight">Dashboard Overview</h1>
-          <p className="text-zinc-500 mt-1">Explore the SAR framework visually or via the sidebar.</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">Dashboard Overview</h1>
+          <p className="text-muted mt-1">Explore the SAR framework visually or via the sidebar.</p>
         </div>
         
-        <div className="flex items-center bg-zinc-100 p-1 rounded-lg border border-zinc-200 shadow-sm">
+        <div className="flex items-center bg-surface-alt p-1 rounded-lg border border-border shadow-sm">
           <button
             onClick={() => setView("split")}
             className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-              view === "split" ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+              view === "split" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-foreground"
             }`}
           >
             <LayoutGrid size={16} />
@@ -28,7 +28,7 @@ export default function Home() {
           <button
             onClick={() => setView("tree")}
             className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-              view === "tree" ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+              view === "tree" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-foreground"
             }`}
           >
             <Network size={16} />
@@ -40,9 +40,9 @@ export default function Home() {
       {view === "tree" ? (
         <TreeVisualizer />
       ) : (
-        <div className="border border-zinc-200 border-dashed rounded-xl p-12 text-center bg-zinc-50/50">
-          <h2 className="text-lg font-medium text-zinc-900 mb-2">Select an item from the sidebar</h2>
-          <p className="text-zinc-500 text-sm">Navigate through the criteria using the sidebar to view details in Split View.</p>
+        <div className="border border-border border-dashed rounded-xl p-12 text-center bg-surface-alt">
+          <h2 className="text-lg font-medium text-foreground mb-2">Select an item from the sidebar</h2>
+          <p className="text-muted text-sm">Navigate through the criteria using the sidebar to view details in Split View.</p>
         </div>
       )}
     </div>
