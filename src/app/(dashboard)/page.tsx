@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import TreeVisualizer from "./components/TreeVisualizer";
+import TreeVisualizer from "@/app/components/TreeVisualizer";
 import { LayoutGrid, Network } from "lucide-react";
 
 export default function Home() {

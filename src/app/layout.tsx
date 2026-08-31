@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Inter } from "next/font/google";
-import AppLayout from "@/app/components/AppLayout";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,8 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="flex h-full bg-white text-[#171717] font-sans">
-        <AppLayout>{children}</AppLayout>
+      <body className="flex h-full bg-white text-zinc-900 font-sans">
+        {children}
       </body>
     </html>
   );
