@@ -60,14 +60,20 @@ export default function ExportPage() {
                           return (
                             <div key={ss.id} className="bg-white border border-zinc-200 p-4 rounded-md">
                               <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-medium text-zinc-900 max-w-[70%]">{ss.Title}</h4>
-                                <div className="text-right">
-                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                    status === "Completed" ? "bg-indigo-50 text-indigo-700" :
-                                    status === "In Progress" ? "bg-amber-50 text-amber-700" :
-                                    "bg-zinc-100 text-zinc-600"
-                                  }`}>{status}</span>
-                                  <div className="mt-2 text-sm font-bold text-zinc-700">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-zinc-900">{ss.Title}</h4>
+                                  <div className="mt-1">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                      status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                      status === "ongoing" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                      "bg-zinc-100 text-zinc-600 border-zinc-200"
+                                    }`}>
+                                      {status === "completed" ? "Completed" : status === "ongoing" ? "In Progress" : "Not Started"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right ml-4">
+                                  <div className="text-sm font-bold text-zinc-700">
                                     Score: {score} / {ss.Marks}
                                   </div>
                                 </div>
