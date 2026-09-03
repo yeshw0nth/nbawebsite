@@ -5,6 +5,7 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { hierarchy, tree } from "d3-hierarchy";
 import guidelinesData from "@/data/guidelines.json";
 import { useRouter } from "next/navigation";
+import { useProgress } from "@/context/ProgressContext";
 import { Maximize2, ZoomIn, ZoomOut, X } from "lucide-react";
 
 type TreeNode = {
@@ -17,6 +18,7 @@ type TreeNode = {
 export default function TreeVisualizer() {
   const router = useRouter();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { getNodeStatus } = useProgress();
 
   const data = useMemo(() => {
     const root: TreeNode = {
@@ -110,39 +112,51 @@ export default function TreeVisualizer() {
                            ${(link.source.y + link.target.y) / 2},${link.target.x} 
                            ${link.target.y},${link.target.x}`}
                       fill="none"
-                      stroke="#E4E4E7"
+                      stroke="var(--color-border)"
                       strokeWidth={2}
+                      className="opacity-50"
                     />
                   ))}
-                  {nodes.map((node, i) => (
-                    <g key={i} transform={`translate(${node.y},${node.x})`}>
-                      <circle
-                        r={node.data.type === "root" ? 8 : node.data.type === "criterion" ? 6 : 4}
-                        fill={node.data.type === "root" ? "#4F46E5" : node.data.type === "criterion" ? "#6366F1" : "#A1A1AA"}
-                        className={node.data.type === "subsub" ? "cursor-pointer hover:fill-indigo-500 transition-colors" : ""}
-                        onClick={() => {
-                          if (node.data.type === "subsub" || node.data.type === "sub" || node.data.type === "criterion") {
-                            router.push(`/criteria/${node.data.id}`);
-                          }
-                        }}
-                      />
-                      <text
-                        dy=".31em"
-                        x={node.children ? -12 : 12}
-                        textAnchor={node.children ? "end" : "start"}
-                        className={`text-xs select-none ${
-                          node.data.type === "subsub" ? "fill-zinc-500 hover:fill-indigo-600 cursor-pointer font-medium transition-colors" : "fill-zinc-700 font-semibold"
-                        }`}
-                        onClick={() => {
-                          if (node.data.type === "subsub" || node.data.type === "sub" || node.data.type === "criterion") {
-                            router.push(`/criteria/${node.data.id}`);
-                          }
-                        }}
-                      >
-                        {node.data.name.length > 40 ? node.data.name.substring(0, 40) + "..." : node.data.name}
-                      </text>
-                    </g>
-                  ))}
+                  {nodes.map((node, i) => {
+                    const status = getNodeStatus(node.data.id);
+                    const isRoot = node.data.type === "root";
+                    const isSubSub = node.data.type === "subsub";
+                    
+                    let fillColor = "var(--color-muted)";
+                    if (isRoot) fillColor = "var(--color-foreground)";
+                    else if (status === "completed") fillColor = "#059669";
+                    else if (status === "ongoing") fillColor = "var(--color-accent)";
+
+                    return (
+                      <g key={i} transform={`translate(${node.y},${node.x})`}>
+                        <circle
+                          r={isRoot ? 8 : node.data.type === "criterion" ? 6 : 4}
+                          fill={fillColor}
+                          className={isSubSub ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
+                          onClick={() => {
+                            if (isSubSub || node.data.type === "sub" || node.data.type === "criterion") {
+                              router.push(`/criteria/${node.data.id}`);
+                            }
+                          }}
+                        />
+                        <text
+                          dy=".31em"
+                          x={node.children ? -12 : 12}
+                          textAnchor={node.children ? "end" : "start"}
+                          className={`text-xs select-none ${
+                            isSubSub ? "fill-muted hover:fill-accent cursor-pointer font-medium transition-colors" : "fill-foreground font-semibold"
+                          }`}
+                          onClick={() => {
+                            if (isSubSub || node.data.type === "sub" || node.data.type === "criterion") {
+                              router.push(`/criteria/${node.data.id}`);
+                            }
+                          }}
+                        >
+                          {node.data.name.length > 40 ? node.data.name.substring(0, 40) + "..." : node.data.name}
+                        </text>
+                      </g>
+                    );
+                  })}
                 </g>
               </svg>
             </TransformComponent>

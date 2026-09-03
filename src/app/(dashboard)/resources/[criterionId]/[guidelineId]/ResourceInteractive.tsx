@@ -7,7 +7,7 @@ import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-type Status = "Not Started" | "In Progress" | "Completed";
+import { Status } from "@/context/ProgressContext";
 
 type FileMeta = {
   name: string;
@@ -20,18 +20,16 @@ export default function ResourceInteractive({
 }: { 
   globalGuidelineId: string;
 }) {
-  const { statuses, notes, updateStatus, updateNote } = useProgress();
+  const { getNodeStatus, notes, updateStatus, updateNote } = useProgress();
   
-  const currentStatus = statuses[globalGuidelineId] || "Not Started";
+  const currentStatus = getNodeStatus(globalGuidelineId);
   const currentNote = notes[globalGuidelineId] || "";
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [files, setFiles] = useState<FileMeta[]>([]);
   const [isEditingNote, setIsEditingNote] = useState(false);
 
   const handleStatusChange = (status: Status) => {
     updateStatus(globalGuidelineId, status);
-    setIsDropdownOpen(false);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -52,29 +50,34 @@ export default function ResourceInteractive({
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       
-      {/* Status Toggle */}
-      <div className="flex items-center gap-3 border-b border-zinc-100 pb-8">
-        <span className="text-sm font-medium text-zinc-500 tracking-tight">Status:</span>
-        <div className="relative">
+      {/* Status Toggle - 3-way Segmented Control */}
+      <div className="flex items-center justify-between border-b border-border pb-8">
+        <span className="text-sm font-medium text-muted tracking-tight">Guideline Status</span>
+        <div className="flex items-center p-1 bg-surface-alt border border-border rounded-lg shadow-sm">
           <button 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              currentStatus === "Completed" ? "bg-indigo-50 text-indigo-600" :
-              currentStatus === "In Progress" ? "bg-amber-50 text-amber-600" :
-              "bg-zinc-100 text-zinc-600"
+            onClick={() => handleStatusChange("pending")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+              currentStatus === "pending" ? "bg-surface text-muted shadow-sm" : "text-muted hover:text-foreground"
             }`}
           >
-            {currentStatus}
-            <ChevronDown size={14} />
+            Pending
           </button>
-          
-          {isDropdownOpen && (
-            <div className="absolute top-full left-0 mt-2 w-40 bg-white border border-zinc-200 rounded-md shadow-lg z-50 overflow-hidden">
-              <button onClick={() => handleStatusChange("Not Started")} className="w-full text-left px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Not Started</button>
-              <button onClick={() => handleStatusChange("In Progress")} className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50">In Progress</button>
-              <button onClick={() => handleStatusChange("Completed")} className="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50">Completed</button>
-            </div>
-          )}
+          <button 
+            onClick={() => handleStatusChange("ongoing")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+              currentStatus === "ongoing" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-foreground"
+            }`}
+          >
+            Ongoing
+          </button>
+          <button 
+            onClick={() => handleStatusChange("completed")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+              currentStatus === "completed" ? "bg-surface text-emerald-600 shadow-sm" : "text-muted hover:text-foreground"
+            }`}
+          >
+            Completed
+          </button>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import guidelinesData from "@/data/guidelines.json";
 import { useProgress } from "@/context/ProgressContext";
+import StatusIcon from "./StatusIcon";
 
 type SubSubCriterion = {
   Title: string;
@@ -44,7 +45,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const params = useParams();
   const currentId = params?.id as string | undefined;
   
-  const { isSubSubCompleted, totalSubSubs, completedSubSubs } = useProgress();
+  const { getNodeStatus, totalSubSubs, completedSubSubs } = useProgress();
   const progressPercent = totalSubSubs > 0 ? Math.round((completedSubSubs / totalSubSubs) * 100) : 0;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -237,16 +238,21 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                       toggleExpand(cId, e);
                       handleNodeClick(cId);
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors justify-between ${
                       isActive ? "bg-accent-subtle text-accent font-medium" : "text-foreground hover:bg-surface-alt"
                     }`}
                   >
-                    <span className="shrink-0 text-muted">
-                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    </span>
-                    <span className="truncate text-left flex-1" title={c.Criterion}>
-                      {c.Criterion}
-                    </span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="shrink-0 text-muted">
+                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      </span>
+                      <span className="truncate text-left flex-1" title={c.Criterion}>
+                        {c.Criterion}
+                      </span>
+                    </div>
+                    <div className="shrink-0 flex items-center pl-2">
+                      <StatusIcon status={getNodeStatus(cId)} size={14} />
+                    </div>
                   </button>
 
                   <AnimatePresence initial={false}>
@@ -271,18 +277,23 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                                     toggleExpand(sId, e);
                                     handleNodeClick(sId);
                                   }}
-                                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors justify-between ${
                                     isSActive
                                       ? "bg-accent-subtle text-accent font-medium"
                                       : "text-muted hover:bg-surface-alt hover:text-foreground"
                                   }`}
                                 >
-                                  <span className="shrink-0 text-muted">
-                                    {isSExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                  </span>
-                                  <span className="truncate text-left flex-1" title={s.Title}>
-                                    {s.Title}
-                                  </span>
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className="shrink-0 text-muted">
+                                      {isSExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                    </span>
+                                    <span className="truncate text-left flex-1" title={s.Title}>
+                                      {s.Title}
+                                    </span>
+                                  </div>
+                                  <div className="shrink-0 flex items-center pl-2">
+                                    <StatusIcon status={getNodeStatus(sId)} size={14} />
+                                  </div>
                                 </button>
 
                                 <AnimatePresence initial={false}>
@@ -312,9 +323,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                                               <span className="line-clamp-2 pr-2" title={ss.Title}>
                                                 {ss.Title}
                                               </span>
-                                              {isSubSubCompleted(ssId) && (
-                                                <CheckCircle2 size={14} className="text-accent shrink-0" />
-                                              )}
+                                              <div className="shrink-0 flex items-center">
+                                                <StatusIcon status={getNodeStatus(ssId)} size={12} />
+                                              </div>
                                             </button>
                                           );
                                         })}

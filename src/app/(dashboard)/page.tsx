@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import TreeVisualizer from "@/app/components/TreeVisualizer";
+import DashboardMetrics from "@/app/components/DashboardMetrics";
 import { LayoutGrid, Network } from "lucide-react";
 
 export default function Home() {
-  const [view, setView] = useState<"split" | "tree">("tree");
+  const [view, setView] = useState<"split" | "tree">("split");
 
   return (
     <div className="animate-in fade-in duration-300">
+      
+      <DashboardMetrics />
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">Dashboard Overview</h1>

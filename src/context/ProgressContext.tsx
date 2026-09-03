@@ -3,16 +3,18 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import guidelinesData from "@/data/guidelines.json";
 
-type Status = "Not Started" | "In Progress" | "Completed";
+export type Status = "pending" | "ongoing" | "completed";
 
 interface ProgressContextType {
   statuses: Record<string, Status>;
   notes: Record<string, string>;
-  updateStatus: (guidelineId: string, status: Status) => void;
+  updateStatus: (nodeId: string, status: Status) => void;
   updateNote: (guidelineId: string, note: string) => void;
+  getNodeStatus: (nodeId: string) => Status;
   isSubSubCompleted: (ssId: string) => boolean;
   totalSubSubs: number;
   completedSubSubs: number;
+  ongoingSubSubs: number;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -27,8 +29,29 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const savedStatuses = localStorage.getItem("guideline_statuses");
     const savedNotes = localStorage.getItem("guideline_notes");
     
-    if (savedStatuses) setStatuses(JSON.parse(savedStatuses));
-    if (savedNotes) setNotes(JSON.parse(savedNotes));
+    if (savedStatuses) {
+      try {
+        const parsed = JSON.parse(savedStatuses);
+        // Map old statuses if they exist
+        const mapped: Record<string, Status> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (v === "Not Started") mapped[k] = "pending";
+          else if (v === "In Progress") mapped[k] = "ongoing";
+          else if (v === "Completed") mapped[k] = "completed";
+          else mapped[k] = v as Status;
+        }
+        setStatuses(mapped);
+      } catch (e) {
+        console.error("Failed to parse statuses", e);
+      }
+    }
+    if (savedNotes) {
+      try {
+        setNotes(JSON.parse(savedNotes));
+      } catch (e) {
+        console.error("Failed to parse notes", e);
+      }
+    }
     
     setIsLoaded(true);
   }, []);
@@ -41,27 +64,36 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     }
   }, [statuses, notes, isLoaded]);
 
-  const updateStatus = (guidelineId: string, status: Status) => {
-    setStatuses(prev => ({ ...prev, [guidelineId]: status }));
+  const updateStatus = (nodeId: string, status: Status) => {
+    setStatuses(prev => ({ ...prev, [nodeId]: status }));
   };
 
   const updateNote = (guidelineId: string, note: string) => {
     setNotes(prev => ({ ...prev, [guidelineId]: note }));
   };
 
-  // Helper to check if a SubSubCriterion is completely done
-  // We consider it done if ALL its guidelines are marked 'Completed'
-  // Or simpler: if ANY guideline is 'Completed'. Let's say if it has ANY completed guideline, we mark it completed for the tree to feel responsive.
-  const isSubSubCompleted = (ssId: string) => {
-    // Find the SubSubCriterion to see its guidelines
-    // In our app, guideline IDs are passed as A, B, C, etc. But to make them unique globally, 
-    // the UI uses `{criterionId}/{guidelineId}` in the URL. So the true ID is `ssId-guidelineId`.
-    // Let's check all statuses that start with this `ssId`.
-    const relatedStatuses = Object.entries(statuses).filter(([key]) => key.startsWith(ssId + '-'));
-    if (relatedStatuses.length === 0) return false;
+  const getNodeStatus = (nodeId: string): Status => {
+    // If it's a leaf node (or specifically set), return its status directly
+    if (statuses[nodeId]) {
+      return statuses[nodeId];
+    }
     
-    // Check if at least one is completed (or all). Let's go with "at least one" for quick feedback.
-    return relatedStatuses.some(([_, status]) => status === "Completed");
+    // Check if it's a parent node (e.g., c1, c1-s1)
+    const childrenKeys = Object.keys(statuses).filter(k => k.startsWith(nodeId + "-"));
+    if (childrenKeys.length > 0) {
+      const childrenStatuses = childrenKeys.map(k => statuses[k]);
+      const allCompleted = childrenStatuses.every(s => s === "completed");
+      const someOngoingOrCompleted = childrenStatuses.some(s => s === "ongoing" || s === "completed");
+      
+      if (allCompleted) return "completed";
+      if (someOngoingOrCompleted) return "ongoing";
+    }
+
+    return "pending";
+  };
+
+  const isSubSubCompleted = (ssId: string) => {
+    return getNodeStatus(ssId) === "completed";
   };
 
   // Calculate total SubSubs (leaf nodes)
@@ -72,13 +104,18 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     });
   });
 
-  // Calculate completed SubSubs
+  // Calculate completed and ongoing SubSubs
   let completedCount = 0;
+  let ongoingCount = 0;
+  
   guidelinesData.forEach(c => {
     c["Sub-Criteria"].forEach(s => {
       s["Sub-Sub-Criteria"]?.forEach(ss => {
-        if (isSubSubCompleted(ss.id)) {
+        const status = getNodeStatus(ss.id);
+        if (status === "completed") {
           completedCount++;
+        } else if (status === "ongoing") {
+          ongoingCount++;
         }
       });
     });
@@ -90,9 +127,11 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       notes,
       updateStatus,
       updateNote,
+      getNodeStatus,
       isSubSubCompleted,
       totalSubSubs: total,
-      completedSubSubs: completedCount
+      completedSubSubs: completedCount,
+      ongoingSubSubs: ongoingCount
     }}>
       {children}
     </ProgressContext.Provider>
