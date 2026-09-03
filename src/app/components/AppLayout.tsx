@@ -7,9 +7,14 @@ import { ScoreProvider } from "@/context/ScoreContext";
 import CommandPalette from "./CommandPalette";
 import Link from "next/link";
 import { Home, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const params = useParams();
+  
+  const type = (params?.type as string) || "NBA";
+  const year = (params?.year as string) || "2025-26";
 
   return (
     <ScoreProvider>
@@ -34,16 +39,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link 
                 href="/" 
                 className="text-muted hover:text-accent transition-colors flex items-center justify-center p-2 rounded-md hover:bg-surface-alt"
-                title="Home / Dashboard"
+                title="Back to Framework Selection"
               >
                 <Home size={18} />
               </Link>
               
               <div className="h-4 w-px bg-border mx-1" />
-              
-              <h1 className="text-sm font-medium tracking-tight text-foreground truncate">
-                NBA Accreditation Data Automation and Evidence Management System
-              </h1>
+
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-medium tracking-tight text-foreground truncate hidden sm:block">
+                  NBA Accreditation Data Automation and Evidence Management System
+                </h1>
+                <span className="text-muted hidden sm:inline-block">/</span>
+                <span className="text-sm font-semibold tracking-tight text-accent bg-accent-subtle px-2 py-0.5 rounded-md border border-border uppercase">
+                  {type} / {year}
+                </span>
+              </div>
             </header>
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl px-20 py-10 mt-4 mx-auto">

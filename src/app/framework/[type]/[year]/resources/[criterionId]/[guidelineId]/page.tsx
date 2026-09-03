@@ -43,10 +43,10 @@ function findSubSubCriterionById(id: string) {
 export default async function ResourcePage({ 
   params 
 }: { 
-  params: Promise<{ criterionId: string; guidelineId: string }> 
+  params: Promise<{ criterionId: string; guidelineId: string; type: string; year: string }> 
 }) {
   const resolvedParams = await params;
-  const { criterionId, guidelineId } = resolvedParams;
+  const { criterionId, guidelineId, type = "nba", year = "2025-26" } = resolvedParams;
   
   const subSubCriterion = findSubSubCriterionById(criterionId);
   
@@ -66,19 +66,19 @@ export default async function ResourcePage({
     <article className="animate-in fade-in duration-300">
       <div className="mb-8">
         <Link 
-          href={`/criteria/${criterionId}`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#171717] transition-colors mb-4"
+          href={`/framework/${type}/${year}/criteria/${criterionId}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft size={16} />
           Back to Criterion
         </Link>
-        <div className="text-sm text-gray-400">
-          Context and Resources for Guideline <span className="font-medium text-[#171717]">{guidelineId}</span>
+        <div className="text-sm text-muted">
+          Context and Resources for Guideline <span className="font-medium text-foreground">{guidelineId}</span>
         </div>
       </div>
 
       <header className="mb-6">
-        <h2 className="text-2xl font-semibold tracking-tight text-[#171717] leading-relaxed">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground leading-relaxed">
           {guidelineText}
         </h2>
       </header>

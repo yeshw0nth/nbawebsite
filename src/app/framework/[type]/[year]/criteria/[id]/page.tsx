@@ -62,9 +62,12 @@ function findNodeById(id: string) {
   return null;
 }
 
-export default async function CriteriaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CriteriaPage({ params }: { params: Promise<{ id: string, type: string, year: string }> }) {
   const resolvedParams = await params;
   const nodeId = resolvedParams.id;
+  const { type = "nba", year = "2025-26" } = resolvedParams;
+  const basePath = `/framework/${type}/${year}`;
+  
   const node = findNodeById(nodeId);
 
   if (!node) {
@@ -76,9 +79,9 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
     const parts = nodeId.split('-');
     if (parts.length > 1) {
       parts.pop();
-      return `/criteria/${parts.join('-')}`;
+      return `${basePath}/criteria/${parts.join('-')}`;
     }
-    return '/'; // Root
+    return `${basePath}`; // Root dashboard
   };
 
   const parentUrl = getParentUrl();
@@ -162,7 +165,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
                   return (
                     <Link
                       key={idx}
-                      href={`/resources/${nodeId}/${guidelineId}`}
+                      href={`${basePath}/resources/${nodeId}/${guidelineId}`}
                       className="block p-5 text-gray-600 text-base leading-relaxed hover:bg-[#F3F4F6] transition-colors"
                     >
                       {line}
@@ -196,7 +199,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
               {(node.data as SubCriterion)["Sub-Sub-Criteria"]?.map((ss, idx) => (
                 <Link 
                   key={idx} 
-                  href={`/criteria/${nodeId}-ss${idx + 1}`}
+                  href={`${basePath}/criteria/${nodeId}-ss${idx + 1}`}
                   className="flex items-center justify-between p-5 bg-white transition-colors hover:bg-indigo-50 group"
                 >
                   <p className="font-medium text-sm text-[#171717] group-hover:text-indigo-600 transition-colors">{ss.Title}</p>

@@ -16,6 +16,8 @@ type SubCriterion = {
   "Sub-Sub-Criteria"?: SubSubCriterion[];
 };
 
+import { useParams } from "next/navigation";
+
 export default function SubComponentsAccordion({
   items,
   parentId,
@@ -24,6 +26,10 @@ export default function SubComponentsAccordion({
   parentId: string; // e.g., 'c1'
 }) {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const params = useParams();
+  const type = (params?.type as string) || "nba";
+  const year = (params?.year as string) || "2025-26";
+  const basePath = `/framework/${type}/${year}`;
 
   const toggleExpand = (idx: number) => {
     setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }));
@@ -74,7 +80,7 @@ export default function SubComponentsAccordion({
                       return (
                         <Link
                           key={ssIdx}
-                          href={`/criteria/${ssId}`}
+                          href={`${basePath}/criteria/${ssId}`}
                           className="flex items-center justify-between p-3 transition-colors hover:bg-indigo-50 group"
                         >
                           <p className="text-sm text-gray-600 group-hover:text-indigo-600 transition-colors">

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { hierarchy, tree } from "d3-hierarchy";
 import guidelinesData from "@/data/guidelines.json";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useProgress } from "@/context/ProgressContext";
 import { Maximize2, ZoomIn, ZoomOut, X } from "lucide-react";
 
@@ -17,8 +17,13 @@ type TreeNode = {
 
 export default function TreeVisualizer() {
   const router = useRouter();
+  const params = useParams();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { getNodeStatus } = useProgress();
+
+  const type = (params?.type as string) || "nba";
+  const year = (params?.year as string) || "2025-26";
+  const basePath = `/framework/${type}/${year}`;
 
   const data = useMemo(() => {
     const root: TreeNode = {
@@ -135,7 +140,7 @@ export default function TreeVisualizer() {
                           className={isSubSub ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
                           onClick={() => {
                             if (isSubSub || node.data.type === "sub" || node.data.type === "criterion") {
-                              router.push(`/criteria/${node.data.id}`);
+                              router.push(`${basePath}/criteria/${node.data.id}`);
                             }
                           }}
                         />
@@ -148,7 +153,7 @@ export default function TreeVisualizer() {
                           }`}
                           onClick={() => {
                             if (isSubSub || node.data.type === "sub" || node.data.type === "criterion") {
-                              router.push(`/criteria/${node.data.id}`);
+                              router.push(`${basePath}/criteria/${node.data.id}`);
                             }
                           }}
                         >

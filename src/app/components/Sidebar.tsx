@@ -45,6 +45,10 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const params = useParams();
   const currentId = params?.id as string | undefined;
   
+  const type = (params?.type as string) || "nba";
+  const year = (params?.year as string) || "2025-26";
+  const basePath = `/framework/${type}/${year}`;
+  
   const { getNodeStatus, totalSubSubs, completedSubSubs } = useProgress();
   const progressPercent = totalSubSubs > 0 ? Math.round((completedSubSubs / totalSubSubs) * 100) : 0;
 
@@ -175,7 +179,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   };
 
   const handleNodeClick = (id: string) => {
-    router.push(`/criteria/${id}`);
+    router.push(`${basePath}/criteria/${id}`);
   };
 
   return (
@@ -348,13 +352,13 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
           {/* Settings & Export */}
           <div className="p-4 border-t border-border shrink-0 bg-surface-alt/50 space-y-2">
             <Link 
-              href="/settings"
+              href={`${basePath}/settings`}
               className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-surface border border-border hover:bg-surface-alt text-foreground text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               System Settings
             </Link>
             <button
-              onClick={() => window.open("/export", "_blank")}
+              onClick={() => window.open(`${basePath}/export`, "_blank")}
               className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-foreground hover:opacity-90 text-background text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Export SAR Audit
