@@ -29,13 +29,15 @@ export function DynamicTableWidget({
   const [data, setData] = useState<any[]>(contextData);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (guidelineId) {
-      // Sync local state to context whenever it changes
-      updateTableData(guidelineId, tableId, data);
-    }
-  }, [data, guidelineId, tableId]);
+  // Remove the auto-sync useEffect:
+  // useEffect(() => {
+  //   if (guidelineId) {
+  //     updateTableData(guidelineId, tableId, data);
+  //   }
+  // }, [data, guidelineId, tableId]);
 
   // Update local state if context changes externally (e.g. initial load)
   useEffect(() => {
@@ -43,6 +45,13 @@ export function DynamicTableWidget({
       setData(tableData[guidelineId][tableId]);
     }
   }, [tableData, guidelineId, tableId]);
+
+  const handleSave = async () => {
+    if (!guidelineId) return;
+    setIsSaving(true);
+    await updateTableData(guidelineId, tableId, data);
+    setIsSaving(false);
+  };
 
   const handleDownloadTemplate = () => {
     if (!csvTemplateHeaders) return;
@@ -66,9 +75,6 @@ export function DynamicTableWidget({
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        // results.data is an array of objects
-        // In a real app we'd map and validate the CSV headers to our data structure.
-        // For demonstration, we simply append the raw rows.
         if (results.data && results.data.length > 0) {
           setData((prev) => [...prev, ...results.data]);
         }
@@ -109,10 +115,17 @@ export function DynamicTableWidget({
           )}
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-accent bg-surface border border-border hover:bg-surface-alt rounded-md transition-colors shadow-sm"
           >
             <Plus size={14} />
-            Add Record
+            Add Row
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm disabled:opacity-70"
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>

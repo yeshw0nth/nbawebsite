@@ -12,18 +12,22 @@ export function Table4Widget({ guidelineId }: { guidelineId?: string }) {
     LYGm2: { n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, n6: 0, b: 0 },
   };
   const [data, setData] = useState(contextData);
-
-  useEffect(() => {
-    if (guidelineId) {
-      updateTableData(guidelineId, tableId, data);
-    }
-  }, [data, guidelineId]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (guidelineId && tableData[guidelineId]?.[tableId]) {
       setData(tableData[guidelineId][tableId]);
     }
   }, [tableData, guidelineId]);
+
+  const handleSave = async () => {
+    if (!guidelineId) return;
+    setIsSaving(true);
+    await updateTableData(guidelineId, tableId, data);
+    setIsSaving(false);
+    setIsEditing(false);
+  };
 
   const calculateSR = (row: any) => {
     // A* = N1 + N2 + N5 - N6
@@ -48,9 +52,29 @@ export function Table4Widget({ guidelineId }: { guidelineId?: string }) {
 
   return (
     <div className="flex flex-col gap-4 mt-8 animate-in fade-in duration-300">
-      <div className="border-b border-border pb-4">
-        <h3 className="text-lg font-medium tracking-tight text-foreground">Tables 4A-4C: Admissions & Success Rate</h3>
-        <p className="text-sm text-muted mt-1">A = N1 + N2 + N5 - N6. Success Rate (SR) = (B / A) * 100</p>
+      <div className="flex items-start justify-between border-b border-border pb-4">
+        <div>
+          <h3 className="text-lg font-medium tracking-tight text-foreground">Tables 4A-4C: Admissions & Success Rate</h3>
+          <p className="text-sm text-muted mt-1">A = N1 + N2 + N5 - N6. Success Rate (SR) = (B / A) * 100</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm disabled:opacity-70"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-accent bg-surface border border-border hover:bg-surface-alt rounded-md transition-colors shadow-sm"
+            >
+              Edit Table
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="border border-border rounded-md bg-surface overflow-hidden">
@@ -77,23 +101,31 @@ export function Table4Widget({ guidelineId }: { guidelineId?: string }) {
                   <tr key={year} className="hover:bg-surface-alt/30 transition-colors">
                     <td className="px-4 py-3 border-r border-border font-medium">{year}</td>
                     {(["n1", "n2", "n3", "n4", "n5", "n6"] as const).map(field => (
-                      <td key={field} className="p-0 border-r border-border">
-                        <input 
-                          type="number" min="0" value={data[year][field] || ""} 
-                          onChange={e => updateField(year, field, e.target.value)}
-                          className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50" 
-                        />
+                      <td key={field} className="border-r border-border p-0">
+                        {isEditing ? (
+                          <input 
+                            type="number" min="0" value={data[year][field] || ""} 
+                            onChange={e => updateField(year, field, e.target.value)}
+                            className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50 text-foreground" 
+                          />
+                        ) : (
+                          <div className="w-full h-full px-4 py-3 text-foreground">{data[year][field] || "-"}</div>
+                        )}
                       </td>
                     ))}
                     <td className="px-4 py-3 border-r border-border bg-muted/10 cursor-not-allowed text-muted-foreground font-medium">
                       {result.a}
                     </td>
-                    <td className="p-0 border-r border-border">
-                      <input 
-                        type="number" min="0" value={data[year].b || ""} 
-                        onChange={e => updateField(year, "b", e.target.value)}
-                        className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50" 
-                      />
+                    <td className="border-r border-border p-0">
+                      {isEditing ? (
+                        <input 
+                          type="number" min="0" value={data[year].b || ""} 
+                          onChange={e => updateField(year, "b", e.target.value)}
+                          className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50 text-foreground" 
+                        />
+                      ) : (
+                        <div className="w-full h-full px-4 py-3 text-foreground">{data[year].b || "-"}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 bg-muted/10 cursor-not-allowed text-accent font-semibold">
                       {result.sr}%

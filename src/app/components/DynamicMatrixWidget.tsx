@@ -30,12 +30,8 @@ export function DynamicMatrixWidget({
   const { tableData, updateTableData } = useProgress();
   const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || initialData;
   const [data, setData] = useState(() => contextData);
-
-  useEffect(() => {
-    if (guidelineId) {
-      updateTableData(guidelineId, tableId, data);
-    }
-  }, [data, guidelineId, tableId]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (guidelineId && tableData[guidelineId]?.[tableId]) {
@@ -43,11 +39,20 @@ export function DynamicMatrixWidget({
     }
   }, [tableData, guidelineId, tableId]);
 
+  const handleSave = async () => {
+    if (!guidelineId) return;
+    setIsSaving(true);
+    await updateTableData(guidelineId, tableId, data);
+    setIsSaving(false);
+    setIsEditing(false);
+  };
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     meta: {
+      isEditing,
       updateData: (rowIndex: number, columnId: string, value: string) => {
         setData((old: any[]) =>
           old.map((row: any, index: number) => {
@@ -68,15 +73,33 @@ export function DynamicMatrixWidget({
     <div className="flex flex-col gap-4 mt-8 animate-in fade-in duration-300">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <h3 className="text-lg font-medium tracking-tight text-foreground">{title}</h3>
-        {onAddRow && (
-          <button
-            onClick={onAddRow}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm"
-          >
-            <Plus size={14} />
-            Add Row
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onAddRow && isEditing && (
+            <button
+              onClick={onAddRow}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm"
+            >
+              <Plus size={14} />
+              Add Row
+            </button>
+          )}
+          {isEditing ? (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm disabled:opacity-70"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-accent bg-surface border border-border hover:bg-surface-alt rounded-md transition-colors shadow-sm"
+            >
+              Edit Table
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="border border-border rounded-md bg-surface overflow-hidden">
@@ -143,6 +166,7 @@ export const EditableMatrixCell = ({ getValue, row: { index }, column: { id }, t
   const initialValue = getValue() || "";
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState(false);
+  const isEditing = table.options.meta?.isEditing;
 
   const onBlur = () => {
     // Strict data validation for matrix cells
@@ -166,13 +190,21 @@ export const EditableMatrixCell = ({ getValue, row: { index }, column: { id }, t
     setValue(initialValue);
   }, [initialValue]);
 
+  if (!isEditing) {
+    return (
+      <div className="w-full h-full px-4 py-3 text-center text-foreground font-medium">
+        {value || "-"}
+      </div>
+    );
+  }
+
   return (
     <input
       value={value as string}
       onChange={e => setValue(e.target.value)}
       onBlur={onBlur}
       className={`w-full h-full px-4 py-3 bg-transparent text-center focus:outline-none transition-all ${
-        error ? "ring-2 ring-red-500 bg-red-50/10" : "focus:bg-surface-alt/50"
+        error ? "ring-2 ring-red-500 bg-red-50/10" : "focus:bg-surface-alt/50 border border-accent rounded-sm"
       }`}
     />
   );

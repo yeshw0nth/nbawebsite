@@ -12,18 +12,22 @@ export function Table531({ guidelineId }: { guidelineId?: string }) {
     CAYm2: { rf1: 0, af1: 0, rf2: 0, af2: 0, rf3: 0, af3: 0 },
   };
   const [data, setData] = useState(contextData);
-
-  useEffect(() => {
-    if (guidelineId) {
-      updateTableData(guidelineId, tableId, data);
-    }
-  }, [data, guidelineId]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (guidelineId && tableData[guidelineId]?.[tableId]) {
       setData(tableData[guidelineId][tableId]);
     }
   }, [tableData, guidelineId]);
+
+  const handleSave = async () => {
+    if (!guidelineId) return;
+    setIsSaving(true);
+    await updateTableData(guidelineId, tableId, data);
+    setIsSaving(false);
+    setIsEditing(false);
+  };
 
   const getAvg = (field: any) => {
     return Number(((data.CAY[field] + data.CAYm1[field] + data.CAYm2[field]) / 3).toFixed(2));
@@ -55,9 +59,29 @@ export function Table531({ guidelineId }: { guidelineId?: string }) {
 
   return (
     <div className="flex flex-col gap-4 mt-8 animate-in fade-in duration-300">
-      <div className="border-b border-border pb-4">
-        <h3 className="text-lg font-medium tracking-tight text-foreground">Table No. 5.3.1: Faculty cadre proportion details</h3>
-        <p className="text-sm text-muted mt-1">Marks = [(AF1/RF1) + (AF2*0.6/RF2) + (AF3*0.4/RF3)] * 12.5</p>
+      <div className="flex items-start justify-between border-b border-border pb-4">
+        <div>
+          <h3 className="text-lg font-medium tracking-tight text-foreground">Table No. 5.3.1: Faculty cadre proportion details</h3>
+          <p className="text-sm text-muted mt-1">Marks = [(AF1/RF1) + (AF2*0.6/RF2) + (AF3*0.4/RF3)] * 12.5</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-md transition-colors shadow-sm disabled:opacity-70"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-accent bg-surface border border-border hover:bg-surface-alt rounded-md transition-colors shadow-sm"
+            >
+              Edit Table
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="border border-border rounded-md bg-surface overflow-hidden">
@@ -84,12 +108,16 @@ export function Table531({ guidelineId }: { guidelineId?: string }) {
                 <tr key={year} className="hover:bg-surface-alt/30 transition-colors">
                   <td className="px-4 py-3 border-r border-border font-medium">{year}</td>
                   {(["rf1", "af1", "rf2", "af2", "rf3", "af3"] as const).map(field => (
-                    <td key={field} className="p-0 border-r border-border last:border-r-0">
-                      <input 
-                        type="number" min="0" value={data[year][field] || ""} 
-                        onChange={e => updateField(year, field, e.target.value)}
-                        className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50 text-center" 
-                      />
+                    <td key={field} className="border-r border-border last:border-r-0 p-0 text-center">
+                      {isEditing ? (
+                        <input 
+                          type="number" min="0" value={data[year][field] || ""} 
+                          onChange={e => updateField(year, field, e.target.value)}
+                          className="w-full h-full px-4 py-3 bg-transparent focus:outline-none focus:bg-surface-alt/50 text-center text-foreground" 
+                        />
+                      ) : (
+                        <div className="w-full h-full px-4 py-3 text-foreground">{data[year][field] || "-"}</div>
+                      )}
                     </td>
                   ))}
                 </tr>
