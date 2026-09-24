@@ -18,8 +18,8 @@ const initialData1151 = [
   { peo: "PEON", M1: "", M2: "", M3: "", M4: "", M5: "" },
 ];
 
-export const Table1151 = () => (
-  <DynamicMatrixWidget title="Table No. 1.1.5.1: Mapping of PEOs with mission." columns={columns1151} initialData={initialData1151} />
+export const Table1151 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No. 1.1.5.1: Mapping of PEOs with mission." columns={columns1151} initialData={initialData1151} guidelineId={guidelineId} />
 );
 
 // Table 1.4.2
@@ -41,8 +41,8 @@ const initialData142 = [
   { co: "CO-5" },
 ];
 
-export const Table142 = () => (
-  <DynamicMatrixWidget title="Table No.1.4.2: Course articulation matrix." columns={columns142} initialData={initialData142} />
+export const Table142 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No.1.4.2: Course articulation matrix." columns={columns142} initialData={initialData142} guidelineId={guidelineId} />
 );
 
 // Table 1.5.1
@@ -61,6 +61,6 @@ const initialData151 = [
   { course: "C409" },
 ];
 
-export const Table151 = () => (
-  <DynamicMatrixWidget title="Table No.1.5.1: Program articulation matrix" columns={columns151} initialData={initialData151} />
+export const Table151 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No.1.5.1: Program articulation matrix" columns={columns151} initialData={initialData151} guidelineId={guidelineId} />
 );

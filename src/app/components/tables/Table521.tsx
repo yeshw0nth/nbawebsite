@@ -1,15 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@/context/ProgressContext";
 
-export function Table521() {
-  const [data, setData] = useState({
+export function Table521({ guidelineId }: { guidelineId?: string }) {
+  const tableId = "Table521";
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || {
     CAY: { x: 0, y: 0, rf: 0 },
     CAYm1: { x: 0, y: 0, rf: 0 },
     CAYm2: { x: 0, y: 0, rf: 0 },
-  });
+  };
+  const [data, setData] = useState(contextData);
 
-  const calculateFQI = (row: { x: number; y: number; rf: number }) => {
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId]);
+
+  const calculateFQI = (row: any) => {
     if (row.rf === 0 || isNaN(row.rf)) return 0;
     const fqi = 2.5 * ((10 * row.x + 4 * row.y) / row.rf);
     return Number(fqi.toFixed(2));
@@ -21,7 +37,7 @@ export function Table521() {
   const avgAssessment = Number(((fqiCAY + fqiCAYm1 + fqiCAYm2) / 3).toFixed(2));
 
   const updateField = (year: keyof typeof data, field: "x" | "y" | "rf", value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       [year]: { ...prev[year], [field]: Number(value) || 0 }
     }));

@@ -10,15 +10,12 @@ function createTableWidget(title: string, csvHeaders: string[]) {
     header: h.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
   }));
 
-  return function Widget() {
-    const [data, setData] = useState<any[]>([]);
-
+  return function Widget({ guidelineId }: { guidelineId?: string }) {
     return (
       <DynamicTableWidget
         title={title}
         columns={columns}
-        data={data}
-        setData={setData}
+        guidelineId={guidelineId}
         csvTemplateHeaders={csvHeaders}
         renderAddForm={(onSubmit, onCancel) => (
           <form 

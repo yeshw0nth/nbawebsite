@@ -1,15 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@/context/ProgressContext";
 
-export function Table531() {
-  const [data, setData] = useState({
+export function Table531({ guidelineId }: { guidelineId?: string }) {
+  const tableId = "Table531";
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || {
     CAY: { rf1: 0, af1: 0, rf2: 0, af2: 0, rf3: 0, af3: 0 },
     CAYm1: { rf1: 0, af1: 0, rf2: 0, af2: 0, rf3: 0, af3: 0 },
     CAYm2: { rf1: 0, af1: 0, rf2: 0, af2: 0, rf3: 0, af3: 0 },
-  });
+  };
+  const [data, setData] = useState(contextData);
 
-  const getAvg = (field: keyof typeof data.CAY) => {
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId]);
+
+  const getAvg = (field: any) => {
     return Number(((data.CAY[field] + data.CAYm1[field] + data.CAYm2[field]) / 3).toFixed(2));
   };
 
@@ -31,7 +47,7 @@ export function Table531() {
   }
 
   const updateField = (year: keyof typeof data, field: keyof typeof data.CAY, value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       [year]: { ...prev[year], [field]: Number(value) || 0 }
     }));

@@ -50,15 +50,12 @@ const csvHeaders5A = [
   "contractualType", "currentlyAssociated", "dateOfLeaving"
 ];
 
-export function Table5AWidget() {
-  const [data, setData] = useState<Faculty5A[]>([]);
-
+export function Table5AWidget({ guidelineId }: { guidelineId?: string }) {
   return (
     <DynamicTableWidget
       title="Table No. 5A: Faculty details"
       columns={columns5A}
-      data={data}
-      setData={setData}
+      guidelineId={guidelineId}
       csvTemplateHeaders={csvHeaders5A}
       renderAddForm={(onSubmit, onCancel) => {
         // Render a generic vertical form based on csvHeaders5A for simplicity

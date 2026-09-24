@@ -22,8 +22,8 @@ const initialData381 = [
   { rowLabel: "Direct Attainment" },
 ];
 
-export const Table381 = () => (
-  <DynamicMatrixWidget title="Table No.3.8.1: PO and PSO attainment value using direct assessment tools." columns={getC3Columns()} initialData={initialData381} />
+export const Table381 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No.3.8.1: PO and PSO attainment value using direct assessment tools." columns={getC3Columns()} initialData={initialData381} guidelineId={guidelineId} />
 );
 
 // Table 3.8.2
@@ -35,8 +35,8 @@ const initialData382 = [
   { rowLabel: "Indirect Attainment" },
 ];
 
-export const Table382 = () => (
-  <DynamicMatrixWidget title="Table No. 3.8.2: PO and PSO attainment value using indirect assessment tools." columns={getC3Columns()} initialData={initialData382} />
+export const Table382 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No. 3.8.2: PO and PSO attainment value using indirect assessment tools." columns={getC3Columns()} initialData={initialData382} guidelineId={guidelineId} />
 );
 
 // Table 3.8.3
@@ -46,6 +46,6 @@ const initialData383 = [
   { rowLabel: "Overall Attainment" },
 ];
 
-export const Table383 = () => (
-  <DynamicMatrixWidget title="Table No.3.8.3: Overall PO and PSO attainment value" columns={getC3Columns()} initialData={initialData383} />
+export const Table383 = ({ guidelineId }: { guidelineId?: string }) => (
+  <DynamicMatrixWidget title="Table No.3.8.3: Overall PO and PSO attainment value" columns={getC3Columns()} initialData={initialData383} guidelineId={guidelineId} />
 );

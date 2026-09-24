@@ -1,15 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@/context/ProgressContext";
 
-export function Table4Widget() {
-  const [data, setData] = useState({
+export function Table4Widget({ guidelineId }: { guidelineId?: string }) {
+  const tableId = "Table4Widget";
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || {
     LYG: { n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, n6: 0, b: 0 },
     LYGm1: { n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, n6: 0, b: 0 },
     LYGm2: { n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, n6: 0, b: 0 },
-  });
+  };
+  const [data, setData] = useState(contextData);
 
-  const calculateSR = (row: typeof data.LYG) => {
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId]);
+
+  const calculateSR = (row: any) => {
     // A* = N1 + N2 + N5 - N6
     const a = row.n1 + row.n2 + row.n5 - row.n6;
     if (a <= 0 || isNaN(a)) return { a: 0, sr: 0 };
@@ -24,7 +40,7 @@ export function Table4Widget() {
   const avgSR = Number(((sr1.sr + sr2.sr + sr3.sr) / 3).toFixed(2));
 
   const updateField = (year: keyof typeof data, field: keyof typeof data.LYG, value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       [year]: { ...prev[year], [field]: Number(value) || 0 }
     }));

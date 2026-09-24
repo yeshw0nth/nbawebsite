@@ -1,19 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@/context/ProgressContext";
 
-export function Table9Widget() {
-  const [data, setData] = useState({
+export function Table9Widget({ guidelineId }: { guidelineId?: string }) {
+  const tableId = "Table9Widget";
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || {
     budget: 0,
     actual: 0,
     students: 0,
-  });
+  };
+  const [data, setData] = useState(contextData);
+
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId]);
 
   const spentPercent = data.budget > 0 ? ((data.actual / data.budget) * 100).toFixed(2) : 0;
   const perStudent = data.students > 0 ? (data.actual / data.students).toFixed(2) : 0;
 
   const updateField = (field: keyof typeof data, value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       [field]: Number(value) || 0
     }));

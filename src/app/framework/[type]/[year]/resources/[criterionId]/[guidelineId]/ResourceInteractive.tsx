@@ -28,7 +28,9 @@ type FileMeta = {
   type: string;
 };
 
-const tableMap: Record<string, React.FC | React.FC[]> = {
+type TableProps = { guidelineId?: string };
+
+const tableMap: Record<string, React.FC<TableProps> | React.FC<TableProps>[]> = {
   "c1-s1-ss5": Table1151,
   "c1-s4-ss2": Table142,
   "c1-s5-ss1": Table151,
@@ -126,9 +128,9 @@ export default function ResourceInteractive({
       {TableComponent && (
         <section className="mb-8">
           {Array.isArray(TableComponent) ? (
-            TableComponent.map((T, i) => <T key={i} />)
+            TableComponent.map((T, i) => <T key={i} guidelineId={globalGuidelineId} />)
           ) : (
-            <TableComponent />
+            <TableComponent guidelineId={globalGuidelineId} />
           )}
         </section>
       )}

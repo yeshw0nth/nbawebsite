@@ -1,30 +1,48 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DataTable } from "./DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, Download, Upload, X } from "lucide-react";
 import Papa from "papaparse";
+import { useProgress } from "@/context/ProgressContext";
 
 interface DynamicTableWidgetProps {
   title: string;
   columns: ColumnDef<any, any>[];
-  data: any[];
-  setData: React.Dispatch<React.SetStateAction<any[]>>;
   csvTemplateHeaders?: string[];
   renderAddForm: (onSubmit: (data: any) => void, onCancel: () => void) => React.ReactNode;
+  guidelineId?: string;
+  tableId?: string;
 }
 
 export function DynamicTableWidget({
   title,
   columns,
-  data,
-  setData,
   csvTemplateHeaders,
-  renderAddForm
+  renderAddForm,
+  guidelineId,
+  tableId = title
 }: DynamicTableWidgetProps) {
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || [];
+  const [data, setData] = useState<any[]>(contextData);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (guidelineId) {
+      // Sync local state to context whenever it changes
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId, tableId]);
+
+  // Update local state if context changes externally (e.g. initial load)
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId] && data.length === 0) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId, tableId]);
 
   const handleDownloadTemplate = () => {
     if (!csvTemplateHeaders) return;

@@ -8,21 +8,40 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
+import { useProgress } from "@/context/ProgressContext";
 
 interface DynamicMatrixWidgetProps {
   title: string;
   initialData: any[];
   columns: ColumnDef<any, any>[];
-  onAddRow?: () => void; // Optional function to add a row (like PEO3, C103)
+  onAddRow?: () => void;
+  guidelineId?: string;
+  tableId?: string;
 }
 
 export function DynamicMatrixWidget({
   title,
   initialData,
   columns,
-  onAddRow
+  onAddRow,
+  guidelineId,
+  tableId = title
 }: DynamicMatrixWidgetProps) {
-  const [data, setData] = useState(() => initialData);
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || initialData;
+  const [data, setData] = useState(() => contextData);
+
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId, tableId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId, tableId]);
 
   const table = useReactTable({
     data,
@@ -30,8 +49,8 @@ export function DynamicMatrixWidget({
     getCoreRowModel: getCoreRowModel(),
     meta: {
       updateData: (rowIndex: number, columnId: string, value: string) => {
-        setData(old =>
-          old.map((row, index) => {
+        setData((old: any[]) =>
+          old.map((row: any, index: number) => {
             if (index === rowIndex) {
               return {
                 ...old[rowIndex]!,

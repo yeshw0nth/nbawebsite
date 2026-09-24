@@ -1,15 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@/context/ProgressContext";
 
-export function Table512() {
-  const [data, setData] = useState({
+export function Table512({ guidelineId }: { guidelineId?: string }) {
+  const tableId = "Table512";
+  const { tableData, updateTableData } = useProgress();
+  const contextData = (guidelineId && tableData[guidelineId]?.[tableId]) || {
     CAY: { s: 0, f: 0, ff: 0 },
     CAYm1: { s: 0, f: 0, ff: 0 },
     CAYm2: { s: 0, f: 0, ff: 0 },
-  });
+  };
+  const [data, setData] = useState(contextData);
 
-  const calculateSFR = (row: { s: number; f: number; ff: number }) => {
+  useEffect(() => {
+    if (guidelineId) {
+      updateTableData(guidelineId, tableId, data);
+    }
+  }, [data, guidelineId]);
+
+  useEffect(() => {
+    if (guidelineId && tableData[guidelineId]?.[tableId]) {
+      setData(tableData[guidelineId][tableId]);
+    }
+  }, [tableData, guidelineId]);
+
+  const calculateSFR = (row: any) => {
     const tf = row.f - row.ff;
     if (tf <= 0 || isNaN(tf)) return 0;
     return Number((row.s / tf).toFixed(2));
@@ -21,7 +37,7 @@ export function Table512() {
   const avgSFR = Number(((sfrCAY + sfrCAYm1 + sfrCAYm2) / 3).toFixed(2));
 
   const updateField = (year: keyof typeof data, field: "s" | "f" | "ff", value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       [year]: { ...prev[year], [field]: Number(value) || 0 }
     }));
