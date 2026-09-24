@@ -16,6 +16,11 @@ import {
 import { Table1151, Table142, Table151 } from "@/app/components/tables/Criterion1Tables";
 import { Table381, Table382, Table383 } from "@/app/components/tables/Criterion3Tables";
 import { Table711, Table751 } from "@/app/components/tables/Criterion7Tables";
+import { Table4Widget } from "@/app/components/tables/Table4Widget";
+import { Table512 } from "@/app/components/tables/Table512";
+import { Table521 } from "@/app/components/tables/Table521";
+import { Table531 } from "@/app/components/tables/Table531";
+import { Table9Widget } from "@/app/components/tables/Table9Widget";
 
 type FileMeta = {
   name: string;
@@ -28,7 +33,10 @@ const tableMap: Record<string, React.FC | React.FC[]> = {
   "c1-s4-ss2": Table142,
   "c1-s5-ss1": Table151,
   "c3-s8-ss1": [Table381, Table382, Table383],
-  "c5-s1-ss1": Table5AWidget,
+  "c4-s2-ss1": Table4Widget,
+  "c5-s1-ss1": [Table512, Table5AWidget],
+  "c5-s2-ss1": Table521,
+  "c5-s3-ss1": Table531,
   "c6-s1-ss1": Table6111,
   "c6-s1-ss2": [Table61211, Table61221],
   "c6-s1-ss3": Table6131,
@@ -43,6 +51,7 @@ const tableMap: Record<string, React.FC | React.FC[]> = {
   "c6-s2-ss6": Table6261,
   "c7-s1-ss1": Table711,
   "c7-s5-ss1": Table751,
+  "c9-s8-ss1": Table9Widget,
 };
 
 export default function ResourceInteractive({ 
