@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import SubComponentsAccordion from "./SubComponentsAccordion";
 import RadialProgress from "@/app/components/RadialProgress";
 import FormulaCalculator from "@/app/components/calculators/FormulaCalculator";
+import ResourceInteractive from "../../resources/[criterionId]/[guidelineId]/ResourceInteractive";
 
 type SubSubCriterion = {
   Title: string;
@@ -180,6 +181,10 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
               <div className="border border-gray-200 rounded-lg p-5 bg-white text-gray-600 text-base leading-relaxed whitespace-pre-wrap">
                 {(node.data as SubSubCriterion).Guidelines_and_Exhibits.Exhibits_Context_to_be_Observed_Assessed || 'No exhibits specified.'}
               </div>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-gray-100">
+              <ResourceInteractive globalGuidelineId={nodeId} />
             </div>
           </>
         )}

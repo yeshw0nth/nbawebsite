@@ -169,7 +169,8 @@ export default function ResourceInteractive({
     }
   };
 
-  const TableComponent = tableMap[globalGuidelineId];
+  const criterionId = globalGuidelineId.split('-').slice(0, 3).join('-');
+  const TableComponent = tableMap[criterionId];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -204,17 +205,6 @@ export default function ResourceInteractive({
           </button>
         </div>
       </div>
-
-      {/* Dynamic Data Table Rendering */}
-      {TableComponent && (
-        <section className="mb-8">
-          {Array.isArray(TableComponent) ? (
-            TableComponent.map((T, i) => <T key={i} guidelineId={globalGuidelineId} />)
-          ) : (
-            <TableComponent guidelineId={globalGuidelineId} />
-          )}
-        </section>
-      )}
 
       {/* Attached PDFs Locker */}
       <section>
@@ -299,6 +289,23 @@ export default function ResourceInteractive({
           </div>
         )}
       </section>
+
+      {/* Dynamic Data Table Rendering - Evaluation Data Grids */}
+      {TableComponent && (
+        <section className="mt-12 pt-8 border-t border-border">
+          <div className="mb-6">
+            <h3 className="text-lg font-medium tracking-tight text-zinc-900">Evaluation Data Grids</h3>
+            <p className="text-sm text-zinc-500 mt-1">Quantitative tables required for this criterion.</p>
+          </div>
+          {Array.isArray(TableComponent) ? (
+            <div className="space-y-12">
+              {TableComponent.map((T, i) => <T key={i} guidelineId={criterionId} />)}
+            </div>
+          ) : (
+            <TableComponent guidelineId={criterionId} />
+          )}
+        </section>
+      )}
     </div>
   );
 }
