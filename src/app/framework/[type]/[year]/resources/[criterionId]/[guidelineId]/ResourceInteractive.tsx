@@ -1,13 +1,14 @@
 "use client";
 
-import { useProgress } from "@/context/ProgressContext";
-import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useProgress, Status } from "@/context/ProgressContext";
+import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2 } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { supabase } from "@/lib/supabaseClient";
+import { useParams } from "next/navigation";
 
-import { Status } from "@/context/ProgressContext";
 import { Table5AWidget } from "@/app/components/tables/Criterion5Tables";
 import { 
   Table6111, Table61211, Table61221, Table6131, Table6141, Table6151, Table6161, Table6171,
@@ -23,9 +24,11 @@ import { Table531 } from "@/app/components/tables/Table531";
 import { Table9Widget } from "@/app/components/tables/Table9Widget";
 
 type FileMeta = {
+  id: string;
   name: string;
   size: number;
   type: string;
+  url: string;
 };
 
 type TableProps = { guidelineId?: string };
@@ -61,31 +64,109 @@ export default function ResourceInteractive({
 }: { 
   globalGuidelineId: string;
 }) {
-  const { getNodeStatus, notes, updateStatus, updateNote } = useProgress();
+  const { getNodeStatus, notes, updateStatus, updateNote, ensureNodeExists } = useProgress();
+  const params = useParams();
+  const frameworkType = (params?.type as string) || "NBA";
+  const academicYear = (params?.year as string) || "2025-26";
   
   const currentStatus = getNodeStatus(globalGuidelineId);
   const currentNote = notes[globalGuidelineId] || "";
 
   const [files, setFiles] = useState<FileMeta[]>([]);
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFiles = async () => {
+      const { data } = await supabase
+        .from('node_resources')
+        .select('id, title, url, resource_type, accreditation_nodes!inner(framework_type, academic_year, node_id)')
+        .eq('accreditation_nodes.framework_type', frameworkType)
+        .eq('accreditation_nodes.academic_year', academicYear)
+        .eq('accreditation_nodes.node_id', globalGuidelineId);
+        
+      if (isMounted && data) {
+        const mapped = data.map((r: any) => ({
+          id: r.id,
+          name: r.title,
+          size: 0,
+          type: r.resource_type,
+          url: r.url
+        }));
+        setFiles(mapped);
+      }
+    };
+    fetchFiles();
+    return () => { isMounted = false; };
+  }, [globalGuidelineId, frameworkType, academicYear]);
 
   const handleStatusChange = (status: Status) => {
     updateStatus(globalGuidelineId, status);
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(f => ({
-      name: f.name,
-      size: f.size,
-      type: f.type
-    }));
-    setFiles(prev => [...prev, ...newFiles]);
-  }, []);
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    setIsUploading(true);
+    const nodeUuid = await ensureNodeExists(globalGuidelineId);
+    
+    for (const f of acceptedFiles) {
+      const filePath = `${frameworkType}/${academicYear}/${globalGuidelineId}/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('accreditation_evidence')
+        .upload(filePath, f);
+        
+      if (uploadError) {
+        console.error("Upload failed", uploadError);
+        continue;
+      }
+      
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('accreditation_evidence')
+        .getPublicUrl(filePath);
+        
+      const { data: insertData, error: insertError } = await supabase
+        .from('node_resources')
+        .insert({
+          node_uuid: nodeUuid,
+          resource_type: 'pdf',
+          title: f.name,
+          url: publicUrlData.publicUrl
+        } as any)
+        .select()
+        .single();
+        
+      if (insertData) {
+        const rowData = insertData as any;
+        setFiles(prev => [...prev, {
+          id: rowData.id,
+          name: rowData.title,
+          size: f.size,
+          type: rowData.resource_type,
+          url: rowData.url
+        }]);
+      }
+    }
+    setIsUploading(false);
+  }, [ensureNodeExists, globalGuidelineId, frameworkType, academicYear]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+  const removeFile = async (id: string, url: string) => {
+    // Optimistic UI
+    setFiles(prev => prev.filter(f => f.id !== id));
+    
+    // DB delete
+    await supabase.from('node_resources').delete().eq('id', id);
+    
+    // Bucket delete
+    const urlParts = url.split('/accreditation_evidence/');
+    if (urlParts.length === 2) {
+      await supabase.storage.from('accreditation_evidence').remove([urlParts[1]]);
+    }
   };
 
   const TableComponent = tableMap[globalGuidelineId];
@@ -146,18 +227,20 @@ export default function ResourceInteractive({
         
         {files.length > 0 && (
           <ul className="mb-4 space-y-2">
-            {files.map((file, idx) => (
-              <li key={idx} className="flex items-center justify-between bg-white border border-zinc-200 p-3 rounded-lg shadow-sm">
+            {files.map((file) => (
+              <li key={file.id} className="flex items-center justify-between bg-white border border-zinc-200 p-3 rounded-lg shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="bg-red-50 p-2 rounded-md">
                     <FileText size={16} className="text-red-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-zinc-900 line-clamp-1">{file.name}</p>
-                    <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
+                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-zinc-900 line-clamp-1 hover:underline hover:text-indigo-600 transition-colors">
+                      {file.name}
+                    </a>
+                    {file.size > 0 && <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>}
                   </div>
                 </div>
-                <button onClick={() => removeFile(idx)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
+                <button onClick={() => removeFile(file.id, file.url)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" title="Delete File">
                   <Trash2 size={16} />
                 </button>
               </li>
@@ -167,13 +250,19 @@ export default function ResourceInteractive({
 
         <div 
           {...getRootProps()} 
-          className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+          className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center transition-colors ${
             isDragActive ? "border-indigo-400 bg-indigo-50/50" : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
-          }`}
+          } ${isUploading ? "cursor-wait opacity-70" : "cursor-pointer"}`}
         >
-          <input {...getInputProps()} />
-          <UploadCloud size={32} className={`mb-3 ${isDragActive ? 'text-indigo-500' : 'text-zinc-400'}`} />
-          <p className="text-sm font-medium text-zinc-900">Drag & drop files here, or click to select files</p>
+          <input {...getInputProps()} disabled={isUploading} />
+          {isUploading ? (
+            <Loader2 size={32} className="mb-3 text-indigo-500 animate-spin" />
+          ) : (
+            <UploadCloud size={32} className={`mb-3 ${isDragActive ? 'text-indigo-500' : 'text-zinc-400'}`} />
+          )}
+          <p className="text-sm font-medium text-zinc-900">
+            {isUploading ? "Uploading files..." : "Drag & drop files here, or click to select files"}
+          </p>
           <p className="text-xs text-zinc-500 mt-1">Supports PDF, DOCX, XLSX (Max 10MB)</p>
         </div>
       </section>

@@ -19,6 +19,7 @@ interface ProgressContextType {
   totalSubSubs: number;
   completedSubSubs: number;
   ongoingSubSubs: number;
+  ensureNodeExists: (nodeId: string, overrideStatus?: Status, overrideNotes?: string) => Promise<string>;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -250,7 +251,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       isSubSubCompleted,
       totalSubSubs: total,
       completedSubSubs: completedCount,
-      ongoingSubSubs: ongoingCount
+      ongoingSubSubs: ongoingCount,
+      ensureNodeExists
     }}>
       {children}
     </ProgressContext.Provider>
