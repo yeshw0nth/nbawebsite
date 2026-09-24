@@ -1,7 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import guidelinesData from "@/data/guidelines.json";
+import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 export type Status = "pending" | "ongoing" | "completed";
 
@@ -33,7 +35,6 @@ const computeTableStatus = (data: any): Status => {
     if (hasEmptyString && !hasAnyValue) return "pending";
     return "completed";
   } else if (typeof data === "object") {
-    // Type 3 calc table (nested objects with 0s)
     let hasData = false;
     const checkObj = (obj: any) => {
       for (const val of Object.values(obj)) {
@@ -51,65 +52,126 @@ const computeTableStatus = (data: any): Status => {
 };
 
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+  const frameworkType = (params?.type as string) || "NBA";
+  const academicYear = (params?.year as string) || "2025-26";
+
   const [statuses, setStatuses] = useState<Record<string, Status>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [tableData, setTableData] = useState<Record<string, Record<string, any>>>({});
+  const [nodeUuids, setNodeUuids] = useState<Record<string, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from local storage on mount
+  // Use refs to access latest state in async callbacks without creating dependency cycles
+  const stateRef = useRef({ statuses, notes, nodeUuids });
   useEffect(() => {
-    const savedStatuses = localStorage.getItem("guideline_statuses");
-    const savedNotes = localStorage.getItem("guideline_notes");
-    const savedTableData = localStorage.getItem("guideline_table_data");
+    stateRef.current = { statuses, notes, nodeUuids };
+  }, [statuses, notes, nodeUuids]);
+
+  useEffect(() => {
+    let isMounted = true;
     
-    if (savedStatuses) {
-      try {
-        const parsed = JSON.parse(savedStatuses);
-        const mapped: Record<string, Status> = {};
-        for (const [k, v] of Object.entries(parsed)) {
-          if (v === "Not Started") mapped[k] = "pending";
-          else if (v === "In Progress") mapped[k] = "ongoing";
-          else if (v === "Completed") mapped[k] = "completed";
-          else mapped[k] = v as Status;
-        }
-        setStatuses(mapped);
-      } catch (e) {
-        console.error("Failed to parse statuses", e);
+    const fetchData = async () => {
+      setIsLoaded(false);
+      
+      const { data: nodesData } = await supabase
+        .from("accreditation_nodes")
+        .select("id, node_id, status, user_notes")
+        .eq("framework_type", frameworkType)
+        .eq("academic_year", academicYear);
+        
+      const { data: tablesData } = await supabase
+        .from("dynamic_tables")
+        .select("table_id, payload, accreditation_nodes!inner(framework_type, academic_year, node_id)")
+        .eq("accreditation_nodes.framework_type", frameworkType)
+        .eq("accreditation_nodes.academic_year", academicYear);
+
+      if (!isMounted) return;
+
+      const newStatuses: Record<string, Status> = {};
+      const newNotes: Record<string, string> = {};
+      const newNodeUuids: Record<string, string> = {};
+      
+      if (nodesData) {
+        nodesData.forEach((n: any) => {
+          newStatuses[n.node_id] = n.status;
+          if (n.user_notes) newNotes[n.node_id] = n.user_notes;
+          newNodeUuids[n.node_id] = n.id;
+        });
       }
-    }
-    if (savedNotes) {
-      try { setNotes(JSON.parse(savedNotes)); } catch (e) {}
-    }
-    if (savedTableData) {
-      try { setTableData(JSON.parse(savedTableData)); } catch (e) {}
-    }
+
+      const newTableData: Record<string, Record<string, any>> = {};
+      if (tablesData) {
+        tablesData.forEach((row: any) => {
+          const nodeId = row.accreditation_nodes.node_id;
+          if (!newTableData[nodeId]) newTableData[nodeId] = {};
+          newTableData[nodeId][row.table_id] = row.payload;
+        });
+      }
+
+      setStatuses(newStatuses);
+      setNotes(newNotes);
+      setNodeUuids(newNodeUuids);
+      setTableData(newTableData);
+      setIsLoaded(true);
+    };
+
+    fetchData();
+
+    return () => { isMounted = false; };
+  }, [frameworkType, academicYear]);
+
+  const ensureNodeExists = async (nodeId: string, overrideStatus?: Status, overrideNotes?: string): Promise<string> => {
+    const currentState = stateRef.current;
     
-    setIsLoaded(true);
-  }, []);
+    const payload = {
+      framework_type: frameworkType,
+      academic_year: academicYear,
+      node_id: nodeId,
+      status: overrideStatus ?? (currentState.statuses[nodeId] || "pending"),
+      user_notes: overrideNotes ?? (currentState.notes[nodeId] || null)
+    };
 
-  // Save to local storage on change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("guideline_statuses", JSON.stringify(statuses));
-      localStorage.setItem("guideline_notes", JSON.stringify(notes));
-      localStorage.setItem("guideline_table_data", JSON.stringify(tableData));
+    const { data, error } = await supabase
+      .from("accreditation_nodes")
+      .upsert(payload as any, { onConflict: "framework_type,academic_year,node_id" })
+      .select("id")
+      .single();
+      
+    if (data) {
+      const rowData = data as any;
+      setNodeUuids(prev => ({ ...prev, [nodeId]: rowData.id }));
+      return rowData.id;
     }
-  }, [statuses, notes, tableData, isLoaded]);
+    return currentState.nodeUuids[nodeId] || "";
+  };
 
-  const updateStatus = (nodeId: string, status: Status) => {
+  const updateStatus = async (nodeId: string, status: Status) => {
+    // Optimistic UI Update
     setStatuses(prev => ({ ...prev, [nodeId]: status }));
+    
+    // Background Async Sync
+    if (isLoaded) {
+      await ensureNodeExists(nodeId, status, undefined);
+    }
   };
 
-  const updateNote = (guidelineId: string, note: string) => {
+  const updateNote = async (guidelineId: string, note: string) => {
+    // Optimistic UI Update
     setNotes(prev => ({ ...prev, [guidelineId]: note }));
+    
+    // Background Async Sync
+    if (isLoaded) {
+      await ensureNodeExists(guidelineId, undefined, note);
+    }
   };
 
-  const updateTableData = (guidelineId: string, tableId: string, data: any) => {
+  const updateTableData = async (guidelineId: string, tableId: string, data: any) => {
+    // Optimistic UI Update
     setTableData(prev => {
       const nextGuidelineTables = { ...prev[guidelineId], [tableId]: data };
       const next = { ...prev, [guidelineId]: nextGuidelineTables };
       
-      // Compute Rollup
       const tableStatuses = Object.values(nextGuidelineTables).map(computeTableStatus);
       let newStatus: Status = "pending";
       if (tableStatuses.every(s => s === "completed")) {
@@ -118,17 +180,27 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         newStatus = "ongoing";
       }
       
-      // We asynchronously update the status to prevent race conditions during render
       setTimeout(() => updateStatus(guidelineId, newStatus), 0);
-      
       return next;
     });
+
+    // Background Async Sync
+    if (isLoaded) {
+      const nodeUuid = await ensureNodeExists(guidelineId);
+      if (nodeUuid) {
+        await supabase
+          .from("dynamic_tables")
+          .upsert({
+            node_uuid: nodeUuid,
+            table_id: tableId,
+            payload: data
+          } as any, { onConflict: "node_uuid,table_id" });
+      }
+    }
   };
 
   const getNodeStatus = (nodeId: string): Status => {
-    if (statuses[nodeId]) {
-      return statuses[nodeId];
-    }
+    if (statuses[nodeId]) return statuses[nodeId];
     const childrenKeys = Object.keys(statuses).filter(k => k.startsWith(nodeId + "-"));
     if (childrenKeys.length > 0) {
       const childrenStatuses = childrenKeys.map(k => statuses[k]);
@@ -141,9 +213,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return "pending";
   };
 
-  const isSubSubCompleted = (ssId: string) => {
-    return getNodeStatus(ssId) === "completed";
-  };
+  const isSubSubCompleted = (ssId: string) => getNodeStatus(ssId) === "completed";
 
   let total = 0;
   guidelinesData.forEach(c => {
