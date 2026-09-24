@@ -8,11 +8,35 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { Status } from "@/context/ProgressContext";
+import { Table5AWidget } from "@/app/components/tables/Criterion5Tables";
+import { 
+  Table6111, Table61211, Table61221, Table6131, Table6141, Table6151, Table6161, Table6171,
+  Table6211, Table6221, Table6241, Table6251, Table6261 
+} from "@/app/components/tables/Criterion6Tables";
+import { Table711, Table751 } from "@/app/components/tables/Criterion7Tables";
 
 type FileMeta = {
   name: string;
   size: number;
   type: string;
+};
+
+const tableMap: Record<string, React.FC | React.FC[]> = {
+  "c5-s1-ss1": Table5AWidget,
+  "c6-s1-ss1": Table6111,
+  "c6-s1-ss2": [Table61211, Table61221],
+  "c6-s1-ss3": Table6131,
+  "c6-s1-ss4": Table6141,
+  "c6-s1-ss5": Table6151,
+  "c6-s1-ss6": Table6161,
+  "c6-s1-ss7": Table6171,
+  "c6-s2-ss1": Table6211,
+  "c6-s2-ss2": Table6221,
+  "c6-s2-ss4": Table6241,
+  "c6-s2-ss5": Table6251,
+  "c6-s2-ss6": Table6261,
+  "c7-s1-ss1": Table711,
+  "c7-s5-ss1": Table751,
 };
 
 export default function ResourceInteractive({ 
@@ -47,6 +71,8 @@ export default function ResourceInteractive({
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const TableComponent = tableMap[globalGuidelineId];
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       
@@ -80,6 +106,17 @@ export default function ResourceInteractive({
           </button>
         </div>
       </div>
+
+      {/* Dynamic Data Table Rendering */}
+      {TableComponent && (
+        <section className="mb-8">
+          {Array.isArray(TableComponent) ? (
+            TableComponent.map((T, i) => <T key={i} />)
+          ) : (
+            <TableComponent />
+          )}
+        </section>
+      )}
 
       {/* Attached PDFs Locker */}
       <section>
