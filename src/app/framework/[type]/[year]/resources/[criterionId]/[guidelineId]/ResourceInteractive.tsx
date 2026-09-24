@@ -1,7 +1,7 @@
 "use client";
 
 import { useProgress, Status } from "@/context/ProgressContext";
-import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2 } from "lucide-react";
+import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2, Pencil } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
@@ -74,7 +74,20 @@ export default function ResourceInteractive({
 
   const [files, setFiles] = useState<FileMeta[]>([]);
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [localNote, setLocalNote] = useState(currentNote);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setLocalNote(currentNote);
+  }, [currentNote]);
+
+  const handleSaveNote = async () => {
+    setIsSavingNote(true);
+    await updateNote(globalGuidelineId, localNote);
+    setIsSavingNote(false);
+    setIsEditingNote(false);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -206,8 +219,56 @@ export default function ResourceInteractive({
         </div>
       </div>
 
+      {/* Introductory notes (Markdown) */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium tracking-tight text-zinc-900 flex items-center gap-2">
+            <StickyNote size={18} className="text-zinc-400" />
+            Introductory notes
+          </h3>
+          {isEditingNote ? (
+            <button 
+              onClick={handleSaveNote}
+              disabled={isSavingNote}
+              className="bg-accent text-white px-3 py-1.5 rounded-md text-sm flex items-center gap-2 hover:bg-accent/90 transition-colors disabled:opacity-70"
+            >
+              {isSavingNote ? (
+                <><Loader2 size={14} className="animate-spin" /> Saving...</>
+              ) : (
+                "Save"
+              )}
+            </button>
+          ) : (
+            <button 
+              onClick={() => setIsEditingNote(true)}
+              className="text-sm font-medium text-accent flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+            >
+              <Pencil size={14} />
+              Edit
+            </button>
+          )}
+        </div>
+        
+        {isEditingNote ? (
+          <textarea 
+            value={localNote}
+            onChange={(e) => setLocalNote(e.target.value)}
+            placeholder="Write down your observations (Markdown supported)..."
+            className="w-full border border-border rounded-lg p-5 bg-white text-zinc-900 text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-accent transition-all min-h-[200px] resize-y font-mono"
+          />
+        ) : (
+          <div className="w-full border border-zinc-200 rounded-lg p-5 bg-white min-h-[200px] prose prose-sm prose-zinc max-w-none">
+            {currentNote ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentNote}</ReactMarkdown>
+            ) : (
+              <p className="text-zinc-400 italic">No notes provided yet. Click "Edit" to start writing.</p>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* Attached PDFs Locker */}
-      <section>
+      <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium tracking-tight text-zinc-900 flex items-center gap-2">
             <FileText size={18} className="text-zinc-400" />
@@ -255,39 +316,6 @@ export default function ResourceInteractive({
           </p>
           <p className="text-xs text-zinc-500 mt-1">Supports PDF, DOCX, XLSX (Max 10MB)</p>
         </div>
-      </section>
-
-      {/* User Notes (Markdown) */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium tracking-tight text-zinc-900 flex items-center gap-2">
-            <StickyNote size={18} className="text-zinc-400" />
-            Review Notes
-          </h3>
-          <button 
-            onClick={() => setIsEditingNote(!isEditingNote)}
-            className="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors"
-          >
-            {isEditingNote ? "Preview Markdown" : "Edit Notes"}
-          </button>
-        </div>
-        
-        {isEditingNote ? (
-          <textarea 
-            value={currentNote}
-            onChange={(e) => updateNote(globalGuidelineId, e.target.value)}
-            placeholder="Write down your observations (Markdown supported)..."
-            className="w-full border border-zinc-200 rounded-lg p-5 bg-white text-zinc-900 text-sm leading-relaxed focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all min-h-[200px] resize-y font-mono"
-          />
-        ) : (
-          <div className="w-full border border-zinc-200 rounded-lg p-5 bg-white min-h-[200px] prose prose-sm prose-zinc max-w-none">
-            {currentNote ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentNote}</ReactMarkdown>
-            ) : (
-              <p className="text-zinc-400 italic">No notes provided yet. Click "Edit Notes" to start writing.</p>
-            )}
-          </div>
-        )}
       </section>
 
       {/* Dynamic Data Table Rendering - Evaluation Data Grids */}
