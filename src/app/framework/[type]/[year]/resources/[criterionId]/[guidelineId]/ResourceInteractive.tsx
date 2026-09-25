@@ -419,25 +419,19 @@ export default function ResourceInteractive({
         )}
 
         {links.length > 0 && (
-          <ul className="mb-4 space-y-2">
+          <ul className="mb-4">
             {links.map((link) => (
-              <li key={link.id} className="flex items-center justify-between bg-white border border-zinc-200 p-3 rounded-lg shadow-sm group">
-                <div className="flex items-center gap-3">
-                  <div className="bg-indigo-50 p-2 rounded-md">
-                    <LinkIcon size={16} className="text-indigo-500" />
-                  </div>
-                  <div>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-zinc-900 line-clamp-1 hover:underline hover:text-indigo-600 transition-colors">
-                      {link.title}
-                    </a>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEditClick(link)} className="p-2 text-zinc-400 hover:text-accent transition-colors" title="Edit Link">
-                    <Pencil size={14} />
+              <li key={link.id} className="flex items-center justify-between p-4 border border-border rounded-xl bg-card mb-2 hover:border-accent transition-colors group">
+                <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline flex items-center gap-2">
+                  <LinkIcon className="w-4 h-4" />
+                  {link.title}
+                </a>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEditClick(link)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Edit Link">
+                    <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDeleteLink(link.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" title="Delete Link">
-                    <Trash2 size={16} />
+                  <button onClick={() => handleDeleteLink(link.id)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Delete Link">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </li>
