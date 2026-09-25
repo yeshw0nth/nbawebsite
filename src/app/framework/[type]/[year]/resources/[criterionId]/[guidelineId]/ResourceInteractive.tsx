@@ -73,10 +73,15 @@ export default function ResourceInteractive({
   const currentNote = notes[globalGuidelineId] || "";
 
   const [files, setFiles] = useState<FileMeta[]>([]);
+  const [links, setLinks] = useState<{id: string, title: string, url: string}[]>([]);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [localNote, setLocalNote] = useState(currentNote);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [isAddingLink, setIsAddingLink] = useState(false);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [linkForm, setLinkForm] = useState({ title: '', url: '' });
 
   useEffect(() => {
     setLocalNote(currentNote);
@@ -100,19 +105,72 @@ export default function ResourceInteractive({
         .eq('accreditation_nodes.node_id', globalGuidelineId);
         
       if (isMounted && data) {
-        const mapped = data.map((r: any) => ({
-          id: r.id,
-          name: r.title,
-          size: 0,
-          type: r.resource_type,
-          url: r.url
-        }));
-        setFiles(mapped);
+        const fetchedFiles: FileMeta[] = [];
+        const fetchedLinks: {id: string, title: string, url: string}[] = [];
+        for (const r of (data as any[])) {
+          if (r.resource_type === 'link') {
+            fetchedLinks.push({ id: r.id, title: r.title, url: r.url });
+          } else {
+            fetchedFiles.push({ id: r.id, name: r.title, size: 0, type: r.resource_type, url: r.url });
+          }
+        }
+        setFiles(fetchedFiles);
+        setLinks(fetchedLinks);
       }
     };
     fetchFiles();
     return () => { isMounted = false; };
   }, [globalGuidelineId, frameworkType, academicYear]);
+
+  const handleSaveLink = async () => {
+    if (!linkForm.title || !linkForm.url) return;
+    const nodeUuid = await ensureNodeExists(globalGuidelineId);
+    
+    if (editingLinkId) {
+      // Update
+      const { data, error } = await (supabase.from('node_resources') as any)
+        .update({ title: linkForm.title, url: linkForm.url })
+        .eq('id', editingLinkId)
+        .select()
+        .single();
+      
+      if (data) {
+        const d = data as any;
+        setLinks(prev => prev.map(l => l.id === editingLinkId ? { id: l.id, title: d.title, url: d.url } : l));
+      }
+    } else {
+      // Insert
+      const { data, error } = await supabase
+        .from('node_resources')
+        .insert({
+          node_uuid: nodeUuid,
+          resource_type: 'link',
+          title: linkForm.title,
+          url: linkForm.url
+        } as any)
+        .select()
+        .single();
+      
+      if (data) {
+        const d = data as any;
+        setLinks(prev => [...prev, { id: d.id, title: d.title, url: d.url }]);
+      }
+    }
+    setLinkForm({ title: '', url: '' });
+    setIsAddingLink(false);
+    setEditingLinkId(null);
+  };
+
+  const handleEditClick = (link: {id: string, title: string, url: string}) => {
+    setLinkForm({ title: link.title, url: link.url });
+    setEditingLinkId(link.id);
+    setIsAddingLink(true);
+  };
+
+  const handleDeleteLink = async (id: string) => {
+    setLinks(prev => prev.filter(l => l.id !== id));
+    await supabase.from('node_resources').delete().eq('id', id);
+  };
 
   const handleStatusChange = (status: Status) => {
     updateStatus(globalGuidelineId, status);
@@ -294,6 +352,84 @@ export default function ResourceInteractive({
                 <button onClick={() => removeFile(file.id, file.url)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" title="Delete File">
                   <Trash2 size={16} />
                 </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex items-center justify-between mt-8 mb-4">
+          <h4 className="text-md font-medium tracking-tight text-zinc-900 flex items-center gap-2">
+            <LinkIcon size={16} className="text-zinc-400" />
+            Reference Links
+          </h4>
+          <button 
+            onClick={() => {
+              setLinkForm({ title: '', url: '' });
+              setEditingLinkId(null);
+              setIsAddingLink(!isAddingLink);
+            }}
+            className="text-sm font-medium text-accent flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+          >
+            {isAddingLink ? "Cancel" : <><Plus size={14} /> Add Link</>}
+          </button>
+        </div>
+
+        {isAddingLink && (
+          <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-lg mb-4 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1">Link Title</label>
+              <input 
+                type="text" 
+                value={linkForm.title}
+                onChange={e => setLinkForm({...linkForm, title: e.target.value})}
+                placeholder="e.g. Official University Website"
+                className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1">URL</label>
+              <input 
+                type="url" 
+                value={linkForm.url}
+                onChange={e => setLinkForm({...linkForm, url: e.target.value})}
+                placeholder="https://"
+                className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={handleSaveLink}
+                disabled={!linkForm.title || !linkForm.url}
+                className="bg-accent text-white px-4 py-2 text-sm font-medium rounded-md hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {editingLinkId ? "Update Link" : "Save Link"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {links.length > 0 && (
+          <ul className="mb-4 space-y-2">
+            {links.map((link) => (
+              <li key={link.id} className="flex items-center justify-between bg-white border border-zinc-200 p-3 rounded-lg shadow-sm group">
+                <div className="flex items-center gap-3">
+                  <div className="bg-indigo-50 p-2 rounded-md">
+                    <LinkIcon size={16} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-zinc-900 line-clamp-1 hover:underline hover:text-indigo-600 transition-colors">
+                      {link.title}
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEditClick(link)} className="p-2 text-zinc-400 hover:text-accent transition-colors" title="Edit Link">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => handleDeleteLink(link.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" title="Delete Link">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
