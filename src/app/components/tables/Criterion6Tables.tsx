@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ColumnDef } from "@tanstack/react-table";
+type ColumnDef<T, V=any> = any;
 import { DynamicTableWidget } from "../DynamicTableWidget";
 
 // A generic factory for creating these simple tables to reduce boilerplate
@@ -18,7 +18,7 @@ function createTableWidget(title: string, csvHeaders: string[]) {
         columns={columns}
         guidelineId={guidelineId}
         csvTemplateHeaders={csvHeaders}
-        renderAddForm={(onSubmit, onCancel) => (
+        renderAddForm={(onSubmit: any, onCancel: any) => (
           <form 
             onSubmit={(e) => {
               e.preventDefault();

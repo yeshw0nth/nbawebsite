@@ -1,6 +1,6 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+type ColumnDef<T, V=any> = any;
 import { DynamicMatrixWidget, EditableMatrixCell } from "../DynamicMatrixWidget";
 
 // Base columns for C3 PO/PSO tables
