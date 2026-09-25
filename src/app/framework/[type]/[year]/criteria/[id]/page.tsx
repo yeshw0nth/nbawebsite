@@ -6,6 +6,7 @@ import SubComponentsAccordion from "./SubComponentsAccordion";
 import RadialProgress from "@/app/components/RadialProgress";
 import FormulaCalculator from "@/app/components/calculators/FormulaCalculator";
 import ResourceInteractive from "../../resources/[criterionId]/[guidelineId]/ResourceInteractive";
+import EvaluationGuidelineItem from "@/app/components/criteria/EvaluationGuidelineItem";
 
 type SubSubCriterion = {
   Title: string;
@@ -162,15 +163,15 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
                   
                   const lineMatch = line.match(/^([A-Z])\./);
                   const guidelineId = lineMatch ? lineMatch[1] : (idx + 1).toString();
+                  const globalGuidelineId = `${nodeId}-${guidelineId}`;
                   
                   return (
-                    <Link
+                    <EvaluationGuidelineItem 
                       key={idx}
                       href={`${basePath}/resources/${nodeId}/${guidelineId}`}
-                      className="block p-5 text-gray-600 text-base leading-relaxed hover:bg-[#F3F4F6] transition-colors"
-                    >
-                      {line}
-                    </Link>
+                      text={line}
+                      guidelineId={globalGuidelineId}
+                    />
                   );
                 })}
               </div>
