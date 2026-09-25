@@ -375,28 +375,38 @@ export default function ResourceInteractive({
         </div>
 
         {isAddingLink && (
-          <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-lg mb-4 space-y-3">
+          <div className="flex flex-col gap-3 p-4 border border-border rounded-xl bg-muted/20 mb-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1">Link Title</label>
+              <label className="block text-xs font-medium text-foreground mb-1">Link Title (e.g., Faculty Roster Drive Link)</label>
               <input 
                 type="text" 
                 value={linkForm.title}
                 onChange={e => setLinkForm({...linkForm, title: e.target.value})}
                 placeholder="e.g. Official University Website"
-                className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full px-3 py-2 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1">URL</label>
+              <label className="block text-xs font-medium text-foreground mb-1">URL (https://...)</label>
               <input 
                 type="url" 
                 value={linkForm.url}
                 onChange={e => setLinkForm({...linkForm, url: e.target.value})}
                 placeholder="https://"
-                className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full px-3 py-2 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-2 pt-2">
+              <button 
+                onClick={() => {
+                  setLinkForm({ title: '', url: '' });
+                  setEditingLinkId(null);
+                  setIsAddingLink(false);
+                }}
+                className="text-sm font-medium text-muted-foreground hover:bg-muted px-4 py-2 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
               <button 
                 onClick={handleSaveLink}
                 disabled={!linkForm.title || !linkForm.url}
