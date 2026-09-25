@@ -156,8 +156,8 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
         {node.type === 'subsub' && (
           <>
             <div>
-              <h3 className="text-lg font-medium tracking-tight mb-4 text-[#171717]">Evaluation Guidelines</h3>
-              <div className="border border-gray-200 rounded-lg bg-white divide-y divide-gray-100">
+              <h3 className="text-lg font-medium tracking-tight mb-4 text-foreground">Evaluation Guidelines</h3>
+              <div>
                 {(node.data as SubSubCriterion).Guidelines_and_Exhibits.Evaluation_Guidelines.split('\n').map((line, idx) => {
                   if (!line.trim()) return null;
                   
@@ -178,8 +178,8 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div>
-              <h3 className="text-lg font-medium tracking-tight mb-4 text-[#171717]">Exhibits & Context to be Observed/Assessed</h3>
-              <div className="border border-gray-200 rounded-lg p-5 bg-white text-gray-600 text-base leading-relaxed whitespace-pre-wrap">
+              <h3 className="text-lg font-medium tracking-tight mb-4 text-foreground">Exhibits & Context to be Observed/Assessed</h3>
+              <div className="bg-muted/40 border border-border rounded-xl p-5 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {(node.data as SubSubCriterion).Guidelines_and_Exhibits.Exhibits_Context_to_be_Observed_Assessed || 'No exhibits specified.'}
               </div>
             </div>

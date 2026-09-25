@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root, [data-theme="light"] {
-  --background: #fbfbfb;
+  --background: #FAFAFA;
+  --card: #FFFFFF;
   --foreground: #18181b;
   --surface: #ffffff;
   --surface-alt: #f4f4f5;
@@ -13,11 +14,12 @@
 }
 
 [data-theme="pastel-dark"] {
-  --background: #2A2734;
+  --background: #1C1924;
+  --card: #252230;
   --foreground: #E2DCE9;
   --surface: #363242;
   --surface-alt: #403b4f;
-  --border: #4d465f;
+  --border: #3A3546;
   --accent: #a78bfa;       /* violet-400 */
   --accent-hover: #8b5cf6; /* violet-500 */
   --accent-subtle: #3c3258;
@@ -26,10 +28,11 @@
 
 [data-theme="sepia"] {
   --background: #F4ECD8;
+  --card: #FDF9F1;
   --foreground: #433422;
   --surface: #FFFDF8;
   --surface-alt: #EBE0C8;
-  --border: #DBCDB3;
+  --border: #E6D5B8;
   --accent: #B45309;       /* amber-700 */
   --accent-hover: #92400E; /* amber-800 */
   --accent-subtle: #FCE8CA;
@@ -37,11 +40,12 @@
 }
 
 [data-theme="soft-cream"] {
-  --background: #FCFBF7;
+  --background: #F6F5F0;
+  --card: #FFFFFF;
   --foreground: #4A4A4A;
   --surface: #FFFFFF;
   --surface-alt: #F2EFE8;
-  --border: #E5E0D4;
+  --border: #E2DFD2;
   --accent: #5F8D4E;       /* green-700 */
   --accent-hover: #496F3A; /* green-800 */
   --accent-subtle: #E8F0E5;
@@ -50,6 +54,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-surface-alt: var(--surface-alt);
