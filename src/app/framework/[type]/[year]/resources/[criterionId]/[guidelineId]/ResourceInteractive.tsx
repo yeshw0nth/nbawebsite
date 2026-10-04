@@ -2,7 +2,7 @@
 import RichTextEditor from "@/app/components/RichTextEditor";
 
 import { useProgress, Status } from "@/context/ProgressContext";
-import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2, Pencil , Eye } from "lucide-react";
+import { HardDrive, PlaySquare, Copy, Check, FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2, Pencil, Eye } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
@@ -71,11 +71,12 @@ export default function ResourceInteractive({
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [localNote, setLocalNote] = useState(currentNote);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewLinkId, setPreviewLinkId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [linkForm, setLinkForm] = useState({ title: '', url: '' });
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalNote(currentNote);
@@ -90,40 +91,62 @@ export default function ResourceInteractive({
 
   useEffect(() => {
     let isMounted = true;
-    const fetchFiles = async () => {
-      const { data } = await supabase
+    const fetchFilesAndLinks = async () => {
+      // Query evidence_files
+      const { data: filesData } = await supabase
         .from('evidence_files')
-        .select('id, title, url, resource_type, accreditation_nodes!inner(framework_type, academic_year, node_id)')
-        .eq('accreditation_nodes.framework_type', frameworkType)
+        .select('id, file_name, public_url, accreditation_nodes!inner(framework, academic_year, node_id)')
+        .eq('accreditation_nodes.framework', frameworkType)
         .eq('accreditation_nodes.academic_year', academicYear)
         .eq('accreditation_nodes.node_id', globalGuidelineId);
         
-      if (isMounted && data) {
-        const fetchedFiles: FileMeta[] = [];
-        const fetchedLinks: {id: string, title: string, url: string}[] = [];
-        for (const r of (data as any[])) {
-          if (r.resource_type === 'link') {
-            fetchedLinks.push({ id: r.id, title: r.title, url: r.url });
-          } else {
-            fetchedFiles.push({ id: r.id, name: r.title, size: 0, type: r.resource_type, url: r.url });
-          }
+      // Query evidence_links
+      const { data: linksData } = await supabase
+        .from('evidence_links')
+        .select('id, title, url, accreditation_nodes!inner(framework, academic_year, node_id)')
+        .eq('accreditation_nodes.framework', frameworkType)
+        .eq('accreditation_nodes.academic_year', academicYear)
+        .eq('accreditation_nodes.node_id', globalGuidelineId);
+        
+      if (isMounted) {
+        if (filesData) {
+          const fetchedFiles: FileMeta[] = (filesData as any[]).map(r => ({
+            id: r.id,
+            name: r.file_name,
+            size: 0,
+            type: 'pdf',
+            url: r.public_url
+          }));
+          setFiles(fetchedFiles);
         }
-        setFiles(fetchedFiles);
-        setLinks(fetchedLinks);
+        if (linksData) {
+          const fetchedLinks = (linksData as any[]).map(r => ({
+            id: r.id,
+            title: r.title,
+            url: r.url
+          }));
+          setLinks(fetchedLinks);
+        }
       }
     };
-    fetchFiles();
+    fetchFilesAndLinks();
     return () => { isMounted = false; };
   }, [globalGuidelineId, frameworkType, academicYear]);
 
   const handleSaveLink = async () => {
     if (!linkForm.title || !linkForm.url) return;
+    
+    let finalUrl = linkForm.url.trim();
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = 'https://' + finalUrl;
+    }
+    
     const nodeUuid = await ensureNodeExists(globalGuidelineId);
     
     if (editingLinkId) {
       // Update
-      const { data, error } = await (supabase.from('evidence_files') as any)
-        .update({ title: linkForm.title, url: linkForm.url })
+      const { data, error } = await supabase.from('evidence_links')
+        .update({ title: linkForm.title, url: finalUrl } as any)
         .eq('id', editingLinkId)
         .select()
         .single();
@@ -135,15 +158,11 @@ export default function ResourceInteractive({
     } else {
       // Insert
       const { data, error } = await supabase
-        .from('evidence_files')
+        .from('evidence_links')
         .insert({
           node_uuid: nodeUuid,
-          node_id: globalGuidelineId,
-          framework_type: frameworkType,
-          academic_year: academicYear,
-          resource_type: 'link',
           title: linkForm.title,
-          url: linkForm.url
+          url: finalUrl
         } as any)
         .select()
         .single();
@@ -167,6 +186,22 @@ export default function ResourceInteractive({
   const handleDeleteLink = async (id: string) => {
     setLinks(prev => prev.filter(l => l.id !== id));
     await supabase.from('evidence_links').delete().eq('id', id);
+  };
+
+  const handleCopyLink = (link: {id: string, title: string, url: string}) => {
+    navigator.clipboard.writeText(link.url);
+    setCopiedId(link.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const getLinkIcon = (url: string) => {
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      return <HardDrive className="w-4 h-4 text-muted-foreground mr-2" />;
+    }
+    if (url.includes('youtube.com')) {
+      return <PlaySquare className="w-4 h-4 text-muted-foreground mr-2" />;
+    }
+    return <LinkIcon className="w-4 h-4 text-muted-foreground mr-2" />;
   };
 
   const handleStatusChange = (status: Status) => {
@@ -200,12 +235,9 @@ export default function ResourceInteractive({
         .from('evidence_files')
         .insert({
           node_uuid: nodeUuid,
-          node_id: globalGuidelineId,
-          framework_type: frameworkType,
-          academic_year: academicYear,
-          resource_type: 'pdf',
-          title: f.name,
-          url: publicUrlData.publicUrl
+          file_name: f.name,
+          storage_path: filePath,
+          public_url: publicUrlData.publicUrl
         } as any)
         .select()
         .single();
@@ -214,10 +246,10 @@ export default function ResourceInteractive({
         const rowData = insertData as any;
         setFiles(prev => [...prev, {
           id: rowData.id,
-          name: rowData.title,
+          name: rowData.file_name,
           size: f.size,
-          type: rowData.resource_type,
-          url: rowData.url
+          type: 'pdf',
+          url: rowData.public_url
         }]);
       }
     }
@@ -417,21 +449,33 @@ export default function ResourceInteractive({
           <ul className="mb-4">
             {links.map((link) => { return (() => {
               const isDrive = link.url.includes('drive.google.com') || link.url.includes('docs.google.com');
-              const isPreviewing = previewLinkId === link.id;
+              const isPreviewing = previewUrl === link.id;
+              
+              let iframeUrl = link.url;
+              if (iframeUrl.includes('/view')) {
+                iframeUrl = iframeUrl.replace(/\/view.*?$/, '/preview');
+              } else if (iframeUrl.includes('/edit')) {
+                iframeUrl = iframeUrl.replace(/\/edit.*?$/, '/preview');
+              } else if (!iframeUrl.endsWith('/preview')) {
+                iframeUrl = iframeUrl + '/preview';
+              }
               
               return (
                 <li key={link.id} className="flex flex-col border border-border rounded-xl bg-card mb-2 hover:border-accent transition-colors group overflow-hidden">
                   <div className="flex items-center justify-between p-4">
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline flex items-center gap-2">
-                      <LinkIcon className="w-4 h-4" />
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline flex items-center">
+                      {getLinkIcon(link.url)}
                       {link.title}
                     </a>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {isDrive && (
-                        <button onClick={() => setPreviewLinkId(isPreviewing ? null : link.id)} className="text-muted-foreground hover:text-accent transition-colors p-2 rounded-md hover:bg-muted" title={isPreviewing ? "Close Preview" : "Live Preview"}>
+                        <button onClick={() => setPreviewUrl(isPreviewing ? null : link.id)} className="text-muted-foreground hover:text-accent transition-colors p-2 rounded-md hover:bg-muted" title={isPreviewing ? "Close Preview" : "Live Preview"}>
                           <Eye className="w-4 h-4" />
                         </button>
                       )}
+                      <button onClick={() => handleCopyLink(link)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Copy Link">
+                        {copiedId === link.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      </button>
                       <button onClick={() => handleEditClick(link)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Edit Link">
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -441,12 +485,10 @@ export default function ResourceInteractive({
                     </div>
                   </div>
                   {isPreviewing && isDrive && (
-                    <div className="p-4 border-t border-border bg-muted/10">
+                    <div className="p-4 border-t border-border bg-muted/10 animate-in slide-in-from-top-2 duration-200">
                       <iframe 
-                        src={link.url.replace(/\/view.*?$/, '/preview').replace(/\/edit.*?$/, '/preview')} 
-                        width="100%" 
-                        height="600px" 
-                        className="border border-border rounded-xl bg-white"
+                        src={iframeUrl} 
+                        className="w-full h-[500px] border border-border rounded-lg mt-3 bg-muted/10"
                       />
                     </div>
                   )}
