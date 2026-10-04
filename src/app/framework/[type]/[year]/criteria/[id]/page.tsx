@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import SubComponentsAccordion from "./SubComponentsAccordion";
+import BreadcrumbNav from "@/app/components/BreadcrumbNav";
 import RadialProgress from "@/app/components/RadialProgress";
 import FormulaCalculator from "@/app/components/calculators/FormulaCalculator";
 import ResourceInteractive from "../../resources/[criterionId]/[guidelineId]/ResourceInteractive";
@@ -88,19 +89,6 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
 
   const parentUrl = getParentUrl();
 
-  // Determine Breadcrumbs
-  const breadcrumbs = [];
-  if (node.type === 'criterion') {
-    breadcrumbs.push((node.data as Criterion).Criterion);
-  } else if (node.type === 'sub') {
-    breadcrumbs.push((node.parent as Criterion).Criterion);
-    breadcrumbs.push((node.data as SubCriterion).Title);
-  } else if (node.type === 'subsub') {
-    breadcrumbs.push((node.grandparent as Criterion).Criterion);
-    breadcrumbs.push((node.parent as SubCriterion).Title);
-    breadcrumbs.push((node.data as SubSubCriterion).Title);
-  }
-
   return (
     <article className="animate-in fade-in duration-300">
       {/* Back Button & Breadcrumbs */}
@@ -112,16 +100,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
           <ArrowLeft size={16} />
           Back
         </Link>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400">
-          {breadcrumbs.map((crumb, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <span className={idx === breadcrumbs.length - 1 ? "text-[#171717] font-medium" : "text-gray-500"}>
-                {crumb}
-              </span>
-              {idx < breadcrumbs.length - 1 && <ChevronRight size={14} />}
-            </div>
-          ))}
-        </div>
+        <BreadcrumbNav />
       </div>
 
       <header className="mb-12 border-b border-gray-100 pb-8">

@@ -3,6 +3,7 @@ import { ArrowLeft, FileText, Link as LinkIcon, StickyNote, Plus } from "lucide-
 import guidelinesData from "@/data/guidelines.json";
 import { notFound } from "next/navigation";
 import ResourceInteractive from "./ResourceInteractive";
+import BreadcrumbNav from "@/app/components/BreadcrumbNav";
 
 // Reuse the types locally for simplicity
 type SubSubCriterion = {
@@ -72,9 +73,7 @@ export default async function ResourcePage({
           <ArrowLeft size={16} />
           Back to Criterion
         </Link>
-        <div className="text-sm text-muted">
-          Context and Resources for Guideline <span className="font-medium text-foreground">{guidelineId}</span>
-        </div>
+        <BreadcrumbNav />
       </div>
 
       <header className="mb-6">
