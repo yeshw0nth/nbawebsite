@@ -1,7 +1,8 @@
 "use client";
+import RichTextEditor from "@/app/components/RichTextEditor";
 
 import { useProgress, Status } from "@/context/ProgressContext";
-import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2, Pencil } from "lucide-react";
+import { FileText, Link as LinkIcon, StickyNote, Plus, ChevronDown, UploadCloud, Trash2, Loader2, Pencil , Eye } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
@@ -70,6 +71,7 @@ export default function ResourceInteractive({
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [localNote, setLocalNote] = useState(currentNote);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewLinkId, setPreviewLinkId] = useState<string | null>(null);
 
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
@@ -306,16 +308,11 @@ export default function ResourceInteractive({
         </div>
         
         {isEditingNote ? (
-          <textarea 
-            value={localNote}
-            onChange={(e) => setLocalNote(e.target.value)}
-            placeholder="Write down your observations (Markdown supported)..."
-            className="w-full border border-border rounded-lg p-5 bg-white text-zinc-900 text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-accent transition-all min-h-[200px] resize-y font-mono"
-          />
+          <RichTextEditor value={localNote || ""} onChange={setLocalNote} placeholder="Write down your observations... Paste rich text from Google Docs seamlessly!" />
         ) : (
           <div className="w-full border border-zinc-200 rounded-lg p-5 bg-white min-h-[200px] prose prose-sm prose-zinc max-w-none">
             {currentNote ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentNote}</ReactMarkdown>
+              <div dangerouslySetInnerHTML={{ __html: currentNote }} />
             ) : (
               <p className="text-zinc-400 italic">No notes provided yet. Click "Edit" to start writing.</p>
             )}
@@ -418,22 +415,45 @@ export default function ResourceInteractive({
 
         {links.length > 0 && (
           <ul className="mb-4">
-            {links.map((link) => (
-              <li key={link.id} className="flex items-center justify-between p-4 border border-border rounded-xl bg-card mb-2 hover:border-accent transition-colors group">
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4" />
-                  {link.title}
-                </a>
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEditClick(link)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Edit Link">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDeleteLink(link.id)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Delete Link">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
+            {links.map((link) => { return (() => {
+              const isDrive = link.url.includes('drive.google.com') || link.url.includes('docs.google.com');
+              const isPreviewing = previewLinkId === link.id;
+              
+              return (
+                <li key={link.id} className="flex flex-col border border-border rounded-xl bg-card mb-2 hover:border-accent transition-colors group overflow-hidden">
+                  <div className="flex items-center justify-between p-4">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4" />
+                      {link.title}
+                    </a>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {isDrive && (
+                        <button onClick={() => setPreviewLinkId(isPreviewing ? null : link.id)} className="text-muted-foreground hover:text-accent transition-colors p-2 rounded-md hover:bg-muted" title={isPreviewing ? "Close Preview" : "Live Preview"}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => handleEditClick(link)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Edit Link">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDeleteLink(link.id)} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted" title="Delete Link">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {isPreviewing && isDrive && (
+                    <div className="p-4 border-t border-border bg-muted/10">
+                      <iframe 
+                        src={link.url.replace(/\/view.*?$/, '/preview').replace(/\/edit.*?$/, '/preview')} 
+                        width="100%" 
+                        height="600px" 
+                        className="border border-border rounded-xl bg-white"
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })()}
+            )}
           </ul>
         )}
 
