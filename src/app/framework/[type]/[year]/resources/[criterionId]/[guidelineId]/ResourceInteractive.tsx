@@ -92,40 +92,52 @@ export default function ResourceInteractive({
   useEffect(() => {
     let isMounted = true;
     const fetchFilesAndLinks = async () => {
-      // Query evidence_files
-      const { data: filesData } = await supabase
-        .from('evidence_files')
-        .select('id, file_name, public_url, accreditation_nodes!inner(framework, academic_year, node_id)')
-        .eq('accreditation_nodes.framework', frameworkType)
-        .eq('accreditation_nodes.academic_year', academicYear)
-        .eq('accreditation_nodes.node_id', globalGuidelineId);
+      // Step 1: Query accreditation_nodes
+      const { data: nodeData, error: nodeError } = await supabase
+        .from('accreditation_nodes')
+        .select('id')
+        .eq('framework', frameworkType)
+        .eq('academic_year', academicYear)
+        .eq('node_id', globalGuidelineId)
+        .single();
         
-      // Query evidence_links
-      const { data: linksData } = await supabase
-        .from('evidence_links')
-        .select('id, title, url, accreditation_nodes!inner(framework, academic_year, node_id)')
-        .eq('accreditation_nodes.framework', frameworkType)
-        .eq('accreditation_nodes.academic_year', academicYear)
-        .eq('accreditation_nodes.node_id', globalGuidelineId);
-        
+      if (nodeError || !nodeData) {
+        if (isMounted) {
+          setFiles([]);
+          setLinks([]);
+        }
+        return;
+      }
+      
+      const nodeUuid = (nodeData as any).id;
+      
+      // Step 3: Query evidence_links and evidence_files
+      const [filesRes, linksRes] = await Promise.all([
+        supabase.from('evidence_files').select('id, file_name, public_url').eq('node_uuid', nodeUuid),
+        supabase.from('evidence_links').select('id, title, url').eq('node_uuid', nodeUuid)
+      ]);
+      
       if (isMounted) {
-        if (filesData) {
-          const fetchedFiles: FileMeta[] = (filesData as any[]).map(r => ({
+        if (filesRes.data) {
+          setFiles(filesRes.data.map((r: any) => ({
             id: r.id,
             name: r.file_name,
             size: 0,
             type: 'pdf',
             url: r.public_url
-          }));
-          setFiles(fetchedFiles);
+          })));
+        } else {
+          setFiles([]);
         }
-        if (linksData) {
-          const fetchedLinks = (linksData as any[]).map(r => ({
+        
+        if (linksRes.data) {
+          setLinks(linksRes.data.map((r: any) => ({
             id: r.id,
             title: r.title,
             url: r.url
-          }));
-          setLinks(fetchedLinks);
+          })));
+        } else {
+          setLinks([]);
         }
       }
     };
@@ -145,8 +157,7 @@ export default function ResourceInteractive({
     
     if (editingLinkId) {
       // Update
-      const { data, error } = await supabase.from('evidence_links')
-        .update({ title: linkForm.title, url: finalUrl } as any)
+      const { data, error } = await (supabase.from('evidence_links') as any).update({ title: linkForm.title, url: finalUrl })
         .eq('id', editingLinkId)
         .select()
         .single();

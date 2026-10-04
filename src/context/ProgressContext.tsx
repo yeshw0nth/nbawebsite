@@ -83,7 +83,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         
       const { data: tablesData } = await supabase
         .from("dynamic_spreadsheets")
-        .select("table_id, payload, accreditation_nodes!inner(framework_type, academic_year, node_id)")
+        .select("table_identifier, grid_payload, accreditation_nodes!inner(framework, academic_year, node_id)")
         .eq("accreditation_nodes.framework", frameworkType)
         .eq("accreditation_nodes.academic_year", academicYear);
 

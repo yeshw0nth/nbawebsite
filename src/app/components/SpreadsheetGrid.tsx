@@ -198,11 +198,8 @@ export default function SpreadsheetGrid({
       .upsert({
         node_uuid: nodeUuid,
         table_identifier: tableKey,
-        framework_type: frameworkType,
-        academic_year: academicYear,
-        node_id: guidelineId,
         grid_payload: gridData
-      } as any, { onConflict: "framework_type,academic_year,node_id,table_id" });
+      } as any, { onConflict: "node_uuid,table_identifier" });
 
     updateTableData(guidelineId, tableKey, gridData);
 
