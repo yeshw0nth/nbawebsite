@@ -90,7 +90,7 @@ export default function ResourceInteractive({
     let isMounted = true;
     const fetchFiles = async () => {
       const { data } = await supabase
-        .from('node_resources')
+        .from('evidence_files')
         .select('id, title, url, resource_type, accreditation_nodes!inner(framework_type, academic_year, node_id)')
         .eq('accreditation_nodes.framework_type', frameworkType)
         .eq('accreditation_nodes.academic_year', academicYear)
@@ -120,7 +120,7 @@ export default function ResourceInteractive({
     
     if (editingLinkId) {
       // Update
-      const { data, error } = await (supabase.from('node_resources') as any)
+      const { data, error } = await (supabase.from('evidence_files') as any)
         .update({ title: linkForm.title, url: linkForm.url })
         .eq('id', editingLinkId)
         .select()
@@ -133,9 +133,12 @@ export default function ResourceInteractive({
     } else {
       // Insert
       const { data, error } = await supabase
-        .from('node_resources')
+        .from('evidence_files')
         .insert({
           node_uuid: nodeUuid,
+          node_id: globalGuidelineId,
+          framework_type: frameworkType,
+          academic_year: academicYear,
           resource_type: 'link',
           title: linkForm.title,
           url: linkForm.url
@@ -161,7 +164,7 @@ export default function ResourceInteractive({
 
   const handleDeleteLink = async (id: string) => {
     setLinks(prev => prev.filter(l => l.id !== id));
-    await supabase.from('node_resources').delete().eq('id', id);
+    await supabase.from('evidence_links').delete().eq('id', id);
   };
 
   const handleStatusChange = (status: Status) => {
@@ -192,9 +195,12 @@ export default function ResourceInteractive({
         .getPublicUrl(filePath);
         
       const { data: insertData, error: insertError } = await supabase
-        .from('node_resources')
+        .from('evidence_files')
         .insert({
           node_uuid: nodeUuid,
+          node_id: globalGuidelineId,
+          framework_type: frameworkType,
+          academic_year: academicYear,
           resource_type: 'pdf',
           title: f.name,
           url: publicUrlData.publicUrl
@@ -223,7 +229,7 @@ export default function ResourceInteractive({
     setFiles(prev => prev.filter(f => f.id !== id));
     
     // DB delete
-    await supabase.from('node_resources').delete().eq('id', id);
+    await supabase.from('evidence_files').delete().eq('id', id);
     
     // Bucket delete
     const urlParts = url.split('/accreditation_evidence/');

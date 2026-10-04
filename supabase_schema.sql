@@ -1,75 +1,56 @@
--- Enum for node status
-CREATE TYPE node_status AS ENUM ('pending', 'ongoing', 'completed');
+-- supabase_schema.sql
 
--- 1. accreditation_nodes table
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1. Master Table: accreditation_nodes
+-- Acts as the single source of truth for UI states, status, and notes.
 CREATE TABLE accreditation_nodes (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    framework_type TEXT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    framework TEXT NOT NULL,
     academic_year TEXT NOT NULL,
     node_id TEXT NOT NULL,
-    status node_status DEFAULT 'pending',
-    user_notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(framework_type, academic_year, node_id)
+    status TEXT DEFAULT 'pending',
+    introductory_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(framework, academic_year, node_id)
 );
+ALTER TABLE accreditation_nodes DISABLE ROW LEVEL SECURITY;
 
--- 2. node_resources table
-CREATE TABLE node_resources (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    node_uuid UUID REFERENCES accreditation_nodes(id) ON DELETE CASCADE,
-    resource_type TEXT NOT NULL CHECK (resource_type IN ('pdf', 'link')),
+-- 2. Evidence Links
+-- Stores URLs and titles associated with specific nodes.
+CREATE TABLE evidence_links (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    node_uuid UUID NOT NULL REFERENCES accreditation_nodes(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     url TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+ALTER TABLE evidence_links DISABLE ROW LEVEL SECURITY;
 
--- 3. dynamic_tables table (JSONB storage for varying grid types)
-CREATE TABLE dynamic_tables (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    node_uuid UUID REFERENCES accreditation_nodes(id) ON DELETE CASCADE,
-    table_id TEXT NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(node_uuid, table_id)
+-- 3. Evidence Files
+-- Stores metadata and URLs for files uploaded to Supabase Storage.
+CREATE TABLE evidence_files (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    node_uuid UUID NOT NULL REFERENCES accreditation_nodes(id) ON DELETE CASCADE,
+    file_name TEXT NOT NULL,
+    storage_path TEXT,
+    public_url TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+ALTER TABLE evidence_files DISABLE ROW LEVEL SECURITY;
 
--- Setup updated_at trigger function
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_accreditation_nodes_modtime
-    BEFORE UPDATE ON accreditation_nodes
-    FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
-
-CREATE TRIGGER update_dynamic_tables_modtime
-    BEFORE UPDATE ON dynamic_tables
-    FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
-
-
--- Enable Row Level Security (RLS)
-ALTER TABLE accreditation_nodes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE node_resources ENABLE ROW LEVEL SECURITY;
-ALTER TABLE dynamic_tables ENABLE ROW LEVEL SECURITY;
-
--- Explicit Public Policies (Read & Write for all, assuming Next.js middleware handles gating)
-CREATE POLICY "Enable read access for all users" ON accreditation_nodes FOR SELECT USING (true);
-CREATE POLICY "Enable insert access for all users" ON accreditation_nodes FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable update access for all users" ON accreditation_nodes FOR UPDATE USING (true);
-CREATE POLICY "Enable delete access for all users" ON accreditation_nodes FOR DELETE USING (true);
-
-CREATE POLICY "Enable read access for all users" ON node_resources FOR SELECT USING (true);
-CREATE POLICY "Enable insert access for all users" ON node_resources FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable update access for all users" ON node_resources FOR UPDATE USING (true);
-CREATE POLICY "Enable delete access for all users" ON node_resources FOR DELETE USING (true);
-
-CREATE POLICY "Enable read access for all users" ON dynamic_tables FOR SELECT USING (true);
-CREATE POLICY "Enable insert access for all users" ON dynamic_tables FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable update access for all users" ON dynamic_tables FOR UPDATE USING (true);
-CREATE POLICY "Enable delete access for all users" ON dynamic_tables FOR DELETE USING (true);
+-- 4. Dynamic Spreadsheets
+-- Stores JSONB representations of the react-datasheet-grid arrays.
+CREATE TABLE dynamic_spreadsheets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    node_uuid UUID NOT NULL REFERENCES accreditation_nodes(id) ON DELETE CASCADE,
+    table_identifier TEXT NOT NULL,
+    grid_payload JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(node_uuid, table_identifier)
+);
+ALTER TABLE dynamic_spreadsheets DISABLE ROW LEVEL SECURITY;

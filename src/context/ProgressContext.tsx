@@ -77,14 +77,14 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       
       const { data: nodesData } = await supabase
         .from("accreditation_nodes")
-        .select("id, node_id, status, user_notes")
-        .eq("framework_type", frameworkType)
+        .select("id, node_id, status, introductory_notes")
+        .eq("framework", frameworkType)
         .eq("academic_year", academicYear);
         
       const { data: tablesData } = await supabase
-        .from("dynamic_tables")
+        .from("dynamic_spreadsheets")
         .select("table_id, payload, accreditation_nodes!inner(framework_type, academic_year, node_id)")
-        .eq("accreditation_nodes.framework_type", frameworkType)
+        .eq("accreditation_nodes.framework", frameworkType)
         .eq("accreditation_nodes.academic_year", academicYear);
 
       if (!isMounted) return;
@@ -96,7 +96,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       if (nodesData) {
         nodesData.forEach((n: any) => {
           newStatuses[n.node_id] = n.status;
-          if (n.user_notes) newNotes[n.node_id] = n.user_notes;
+          if (n.introductory_notes) newNotes[n.node_id] = n.introductory_notes;
           newNodeUuids[n.node_id] = n.id;
         });
       }
@@ -106,7 +106,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         tablesData.forEach((row: any) => {
           const nodeId = row.accreditation_nodes.node_id;
           if (!newTableData[nodeId]) newTableData[nodeId] = {};
-          newTableData[nodeId][row.table_id] = row.payload;
+          newTableData[nodeId][row.table_identifier] = row.grid_payload;
         });
       }
 
@@ -126,16 +126,16 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const currentState = stateRef.current;
     
     const payload = {
-      framework_type: frameworkType,
+      framework: frameworkType,
       academic_year: academicYear,
       node_id: nodeId,
       status: overrideStatus ?? (currentState.statuses[nodeId] || "pending"),
-      user_notes: overrideNotes ?? (currentState.notes[nodeId] || null)
+      introductory_notes: overrideNotes ?? (currentState.notes[nodeId] || null)
     };
 
     const { data, error } = await supabase
       .from("accreditation_nodes")
-      .upsert(payload as any, { onConflict: "framework_type,academic_year,node_id" })
+      .upsert(payload as any, { onConflict: "framework,academic_year,node_id" })
       .select("id")
       .single();
       
@@ -190,12 +190,12 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       const nodeUuid = await ensureNodeExists(guidelineId);
       if (nodeUuid) {
         await supabase
-          .from("dynamic_tables")
+          .from("dynamic_spreadsheets")
           .upsert({
             node_uuid: nodeUuid,
-            table_id: tableId,
-            payload: data
-          } as any, { onConflict: "node_uuid,table_id" });
+            table_identifier: tableId,
+            grid_payload: data
+          } as any, { onConflict: "node_uuid,table_identifier" });
       }
     }
   };

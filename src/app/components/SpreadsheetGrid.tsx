@@ -194,12 +194,15 @@ export default function SpreadsheetGrid({
     const nodeUuid = await ensureNodeExists(guidelineId);
 
     const { error } = await supabase
-      .from("dynamic_tables")
+      .from("dynamic_spreadsheets")
       .upsert({
         node_uuid: nodeUuid,
-        table_id: tableKey,
-        payload: gridData
-      } as any, { onConflict: "node_uuid,table_id" });
+        table_identifier: tableKey,
+        framework_type: frameworkType,
+        academic_year: academicYear,
+        node_id: guidelineId,
+        grid_payload: gridData
+      } as any, { onConflict: "framework_type,academic_year,node_id,table_id" });
 
     updateTableData(guidelineId, tableKey, gridData);
 
