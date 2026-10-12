@@ -1,10 +1,11 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import guidelinesData from "@/data/guidelines.json";
 import Link from "next/link";
 import React from "react";
+import { resolveTableKey, getIQACTableConfig } from "@/lib/iqacTableConfigs";
 
 type SubSubCriterion = {
   Title: string;
@@ -31,9 +32,93 @@ const guidelines = guidelinesData as Criterion[];
 
 export default function BreadcrumbNav() {
   const params = useParams();
+  const pathname = usePathname();
   
   if (!params) return null;
 
+  const isIqac = (params.type as string)?.toLowerCase() === "iqac" || pathname?.includes("/iqac/");
+
+  // Dedicated Breadcrumbs for IQAC Deep Routes
+  if (isIqac) {
+    const pathSegments = pathname ? pathname.split("/").filter(Boolean) : [];
+    // Expected pathSegments: ['framework', 'iqac', '2025-26', 'Q1', ...]
+    const year = (params.year as string) || pathSegments[2] || "2025-26";
+    const quarter = (params.quarter as string) || pathSegments[3] || "Q1";
+
+    const breadcrumbs: { title: string; href?: string }[] = [
+      { title: "GPREC ME Dept Accreditation System", href: "/" },
+      { title: "IQAC", href: `/framework/iqac/${year}/${quarter}/part-a/t1` },
+      { title: year, href: `/framework/iqac/${year}/${quarter}/part-a/t1` },
+      { title: quarter, href: `/framework/iqac/${year}/${quarter}/part-a/t1` },
+    ];
+
+    const slug = (params.slug as string[]) || pathSegments.slice(4);
+
+    if (slug && slug.length > 0) {
+      const section = slug[0];
+      if (section === "part-a") {
+        breadcrumbs.push({ title: "Part A", href: `/framework/iqac/${year}/${quarter}/part-a/t1` });
+        const tableId = slug[1] || "t1";
+        const resolvedKey = resolveTableKey(tableId);
+        const config = getIQACTableConfig(resolvedKey);
+        const titleText = config 
+          ? config.title.replace("Table ", "T") 
+          : `T${tableId.replace(/^t/i, "")}`;
+        breadcrumbs.push({ title: titleText });
+      } else if (section === "swoc") {
+        breadcrumbs.push({ title: "SWOC Analysis" });
+      } else if (section === "part-b") {
+        breadcrumbs.push({ title: "Part B: AAA Dept Rubrics" });
+      } else if (section === "part-c") {
+        breadcrumbs.push({ title: "Part C: AAA Inst Rubrics" });
+      } else if (section.startsWith("t")) {
+        breadcrumbs.push({ title: "Part A", href: `/framework/iqac/${year}/${quarter}/part-a/t1` });
+        const resolvedKey = resolveTableKey(section);
+        const config = getIQACTableConfig(resolvedKey);
+        const titleText = config 
+          ? config.title.replace("Table ", "T") 
+          : `T${section.replace(/^t/i, "")}`;
+        breadcrumbs.push({ title: titleText });
+      }
+    } else {
+      breadcrumbs.push({ title: "Part A", href: `/framework/iqac/${year}/${quarter}/part-a/t1` });
+      breadcrumbs.push({ title: "T1: Faculty Posts (Sanctioned/Filled)" });
+    }
+
+    return (
+      <div className="flex items-center overflow-x-auto scrollbar-hide whitespace-nowrap text-sm text-muted-foreground tracking-tight mb-4 pb-2">
+        {breadcrumbs.map((crumb, idx) => {
+          const isLast = idx === breadcrumbs.length - 1;
+          const isMiddle = !isLast && idx > 0;
+          return (
+            <React.Fragment key={idx}>
+              {crumb.href && !isLast ? (
+                <Link
+                  href={crumb.href}
+                  className={`hover:text-foreground transition-colors ${isMiddle ? 'inline-block align-bottom truncate max-w-[200px]' : ''}`}
+                  title={crumb.title}
+                >
+                  {crumb.title}
+                </Link>
+              ) : (
+                <span
+                  className={`text-foreground font-medium ${!isLast && isMiddle ? 'inline-block align-bottom truncate max-w-[220px]' : ''}`}
+                  title={crumb.title}
+                >
+                  {crumb.title}
+                </span>
+              )}
+              {!isLast && (
+                <ChevronRight size={14} className="mx-1 text-border flex-shrink-0" />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // NBA / Other Frameworks Breadcrumbs
   const type = (params.type as string) || "nba";
   const year = (params.year as string) || "2025-26";
   const id = (params.criterionId as string) || (params.id as string);
@@ -81,7 +166,6 @@ export default function BreadcrumbNav() {
                 });
                 
                 if (guidelineText) {
-                  // e.g. "> A. Adherence to the Academic Calendar (02)"
                   breadcrumbs.push({ title: guidelineText.trim() });
                 }
               }

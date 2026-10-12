@@ -8,7 +8,10 @@ Our application utilizes a **Hybrid Architecture** pattern within Supabase/Postg
 
 ### Relational Tables (UI State & Evidence)
 We use strictly typed relational tables to handle predictable UI states and file tracking:
-1. **`accreditation_nodes`**: The master junction table mapping a unique `(framework, academic_year, node_id)`. This table serves as the primary foreign-key anchor (`id`) for all child records. It stores universally applicable state like `status` ('pending', 'ongoing', 'completed') and markdown `introductory_notes`.
+1. **`accreditation_nodes`**: The master junction table mapping a unique composite key `(framework, academic_year, quarter, node_id)` using `UNIQUE NULLS NOT DISTINCT`. This table serves as the primary foreign-key anchor (`id`) for all child records.
+   - For annual frameworks (NBA, NAAC), `quarter` is stored as `NULL`.
+   - For quarterly audit frameworks (IQAC), `quarter` stores `'Q1'`, `'Q2'`, `'Q3'`, or `'Q4'`.
+   - It stores universally applicable state like `status` ('pending', 'ongoing', 'completed') and rich-text/HTML `introductory_notes`.
 2. **`evidence_links`**: Stores explicit standard link references (e.g., Google Drive folders) tied to a `node_uuid`.
 3. **`evidence_files`**: Tracks PDF and document uploads directly tied to a `node_uuid`, storing the resulting Supabase storage bucket references (`public_url`, `storage_path`).
 

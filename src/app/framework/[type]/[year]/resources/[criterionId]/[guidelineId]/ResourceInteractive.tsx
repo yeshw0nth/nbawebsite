@@ -57,7 +57,7 @@ export default function ResourceInteractive({
 }: { 
   globalGuidelineId: string;
 }) {
-  const { getNodeStatus, notes, updateStatus, updateNote, ensureNodeExists } = useProgress();
+  const { getNodeStatus, notes, updateStatus, updateNote, ensureNodeExists, quarter } = useProgress();
   const params = useParams();
   const frameworkType = (params?.type as string) || "NBA";
   const academicYear = (params?.year as string) || "2025-26";
@@ -93,13 +93,20 @@ export default function ResourceInteractive({
     let isMounted = true;
     const fetchFilesAndLinks = async () => {
       // Step 1: Query accreditation_nodes
-      const { data: nodeData, error: nodeError } = await supabase
+      let query = supabase
         .from('accreditation_nodes')
         .select('id')
         .eq('framework', frameworkType)
         .eq('academic_year', academicYear)
-        .eq('node_id', globalGuidelineId)
-        .single();
+        .eq('node_id', globalGuidelineId);
+
+      if (quarter) {
+        query = query.eq('quarter', quarter);
+      } else {
+        query = query.is('quarter', null);
+      }
+
+      const { data: nodeData, error: nodeError } = await query.maybeSingle();
         
       if (nodeError || !nodeData) {
         if (isMounted) {
@@ -143,7 +150,7 @@ export default function ResourceInteractive({
     };
     fetchFilesAndLinks();
     return () => { isMounted = false; };
-  }, [globalGuidelineId, frameworkType, academicYear]);
+  }, [globalGuidelineId, frameworkType, academicYear, quarter]);
 
   const handleSaveLink = async () => {
     if (!linkForm.title || !linkForm.url) return;

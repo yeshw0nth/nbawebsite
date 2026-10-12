@@ -108,8 +108,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const rawYear = (params?.year as string) || (isIqac && pathSegments[2] ? pathSegments[2] : "2025-26");
   const quarter = (params?.quarter as string) || (isIqac && pathSegments[3] ? pathSegments[3] : "");
 
-  // For IQAC, concatenate year and quarter (e.g., 2025-26-Q1) to reuse the exact same DB schema without SQL changes
-  const academicYear = isIqac && quarter ? `${rawYear}-${quarter}` : rawYear;
+  // Academic year is cleanly stored without string concatenation
+  const academicYear = rawYear;
 
   const [statuses, setStatuses] = useState<Record<string, Status>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -129,17 +129,33 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const fetchData = async () => {
       setIsLoaded(false);
       
-      const { data: nodesData } = await supabase
+      let nodesQuery = supabase
         .from("accreditation_nodes")
-        .select("id, node_id, status, introductory_notes")
+        .select("id, node_id, status, introductory_notes, quarter")
         .eq("framework", frameworkType)
         .eq("academic_year", academicYear);
+
+      if (isIqac && quarter) {
+        nodesQuery = nodesQuery.eq("quarter", quarter);
+      } else if (!isIqac) {
+        nodesQuery = nodesQuery.is("quarter", null);
+      }
+
+      const { data: nodesData } = await nodesQuery;
         
-      const { data: tablesData } = await supabase
+      let tablesQuery = supabase
         .from("dynamic_spreadsheets")
-        .select("table_identifier, grid_payload, accreditation_nodes!inner(framework, academic_year, node_id)")
+        .select("table_identifier, grid_payload, accreditation_nodes!inner(framework, academic_year, quarter, node_id)")
         .eq("accreditation_nodes.framework", frameworkType)
         .eq("accreditation_nodes.academic_year", academicYear);
+
+      if (isIqac && quarter) {
+        tablesQuery = tablesQuery.eq("accreditation_nodes.quarter", quarter);
+      } else if (!isIqac) {
+        tablesQuery = tablesQuery.is("accreditation_nodes.quarter", null);
+      }
+
+      const { data: tablesData } = await tablesQuery;
 
       if (!isMounted) return;
 
@@ -174,7 +190,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     fetchData();
 
     return () => { isMounted = false; };
-  }, [frameworkType, academicYear]);
+  }, [frameworkType, academicYear, quarter, isIqac]);
 
   const ensureNodeExists = async (nodeId: string, overrideStatus?: Status, overrideNotes?: string): Promise<string> => {
     const currentState = stateRef.current;
@@ -182,6 +198,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const payload = {
       framework: frameworkType,
       academic_year: academicYear,
+      quarter: isIqac ? (quarter || "Q1") : null,
       node_id: nodeId,
       status: overrideStatus ?? (currentState.statuses[nodeId] || "pending"),
       introductory_notes: overrideNotes ?? (currentState.notes[nodeId] || null)
@@ -189,7 +206,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
 
     const { data, error } = await supabase
       .from("accreditation_nodes")
-      .upsert(payload as any, { onConflict: "framework,academic_year,node_id" })
+      .upsert(payload as any, { onConflict: "framework,academic_year,quarter,node_id" })
       .select("id")
       .single();
       

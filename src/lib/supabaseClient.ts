@@ -14,83 +14,115 @@ export interface Database {
       accreditation_nodes: {
         Row: {
           id: string;
-          framework_type: string;
+          framework: string;
           academic_year: string;
+          quarter: string | null;
           node_id: string;
           status: 'pending' | 'ongoing' | 'completed';
-          user_notes: string | null;
+          introductory_notes: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          framework_type: string;
+          framework: string;
           academic_year: string;
+          quarter?: string | null;
           node_id: string;
           status?: 'pending' | 'ongoing' | 'completed';
-          user_notes?: string | null;
+          introductory_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          framework_type?: string;
+          framework?: string;
           academic_year?: string;
+          quarter?: string | null;
           node_id?: string;
           status?: 'pending' | 'ongoing' | 'completed';
-          user_notes?: string | null;
+          introductory_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
       };
-      node_resources: {
+      evidence_links: {
         Row: {
           id: string;
-          node_uuid: string | null;
-          resource_type: string;
+          node_uuid: string;
           title: string;
           url: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
-          node_uuid?: string | null;
-          resource_type: string;
+          node_uuid: string;
           title: string;
           url: string;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
-          node_uuid?: string | null;
-          resource_type?: string;
+          node_uuid?: string;
           title?: string;
           url?: string;
           created_at?: string;
+          updated_at?: string;
         };
       };
-      dynamic_tables: {
+      evidence_files: {
         Row: {
           id: string;
-          node_uuid: string | null;
-          table_id: string;
-          payload: Json;
+          node_uuid: string;
+          file_name: string;
+          storage_path: string | null;
+          public_url: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          node_uuid?: string | null;
-          table_id: string;
-          payload?: Json;
+          node_uuid: string;
+          file_name: string;
+          storage_path?: string | null;
+          public_url: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          node_uuid?: string | null;
-          table_id?: string;
-          payload?: Json;
+          node_uuid?: string;
+          file_name?: string;
+          storage_path?: string | null;
+          public_url?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      dynamic_spreadsheets: {
+        Row: {
+          id: string;
+          node_uuid: string;
+          table_identifier: string;
+          grid_payload: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          node_uuid: string;
+          table_identifier: string;
+          grid_payload?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          node_uuid?: string;
+          table_identifier?: string;
+          grid_payload?: Json;
           created_at?: string;
           updated_at?: string;
         };

@@ -690,5 +690,122 @@ export const iqacTableConfigs: Record<string, IQACTableDefinition> = {
 };
 
 export function getIQACTableConfig(tableIdentifier: string): IQACTableDefinition | undefined {
-  return iqacTableConfigs[tableIdentifier];
+  const resolved = resolveTableKey(tableIdentifier);
+  return iqacTableConfigs[resolved];
 }
+
+export const TABLE_ID_TO_KEY: Record<string, string> = {
+  t1: "table_1_faculty_posts",
+  t2: "table_2_faculty_profile",
+  t3: "table_3_visiting_faculty",
+  t4: "table_4_visiting_faculty_classes",
+  t5: "table_5_support_staff",
+  t6: "table_6_research_thrust_areas",
+  t7: "table_7_special_laboratories",
+  t8: "table_8_budget_expenditure",
+  t9: "table_9_publications",
+  t10: "table_10_patents",
+  t11: "table_11_projects",
+  t12: "table_12_professional_memberships",
+  t13: "table_13_editorial_boards",
+  t14: "table_14_guest_lectures_delivered",
+  t15: "table_15_sessional_convener",
+  t16: "table_16_administrative_responsibilities",
+  t17: "table_17_faculty_awards",
+  t18: "table_18_consultancy_revenue",
+  t19: "table_19_student_seminars_workshops",
+  t20: "table_20_remedial_classes",
+  t21: "table_21_fdp_conducted",
+  t22: "table_22_fdp_participated",
+  t23: "table_23_eminent_guest_lectures",
+  t24: "table_24_crt_programs",
+  t25: "table_25_placement_drives",
+  t26: "table_26_webinars_organized",
+  t27: "table_27_mous",
+  t28: "table_28_student_research_projects",
+  t29: "table_29_student_awards",
+  t30: "table_30_student_backlogs",
+  t31: "table_31_student_external_seminars",
+  t32: "table_32_industrial_visits",
+  t33: "table_33_student_activities",
+  t34: "table_34_alumni_info",
+};
+
+export const KEY_TO_TABLE_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(TABLE_ID_TO_KEY).map(([k, v]) => [v, k])
+);
+
+export function resolveTableKey(identifier: string): string {
+  if (!identifier) return "table_1_faculty_posts";
+  const normalized = identifier.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  if (TABLE_ID_TO_KEY[normalized]) return TABLE_ID_TO_KEY[normalized];
+  if (iqacTableConfigs[identifier]) return identifier;
+  return identifier;
+}
+
+export const IQAC_TABLE_GROUPS = [
+  {
+    id: "group-1",
+    name: "1. Faculty Information",
+    tables: [
+      { id: "t1", key: "table_1_faculty_posts", label: "T1: Faculty Posts (Sanctioned/Filled)" },
+      { id: "t2", key: "table_2_faculty_profile", label: "T2: Faculty Profile" },
+      { id: "t3", key: "table_3_visiting_faculty", label: "T3: Visiting / Adjunct Faculty" },
+      { id: "t4", key: "table_4_visiting_faculty_classes", label: "T4: Classes by Visiting Faculty" },
+      { id: "t5", key: "table_5_support_staff", label: "T5: Support Staff Details" },
+    ],
+  },
+  {
+    id: "group-2",
+    name: "2. Research & Projects",
+    tables: [
+      { id: "t6", key: "table_6_research_thrust_areas", label: "T6: Thrust Areas of Research" },
+      { id: "t7", key: "table_7_special_laboratories", label: "T7: Special Research Labs" },
+      { id: "t8", key: "table_8_budget_expenditure", label: "T8: Budget and Expenditure" },
+      { id: "t9", key: "table_9_publications", label: "T9: Research Publications" },
+      { id: "t10", key: "table_10_patents", label: "T10: Patents Filed / Granted" },
+      { id: "t11", key: "table_11_projects", label: "T11: Research Projects" },
+    ],
+  },
+  {
+    id: "group-3",
+    name: "3. Professional & Consultancy",
+    tables: [
+      { id: "t12", key: "table_12_professional_memberships", label: "T12: Professional Memberships" },
+      { id: "t13", key: "table_13_editorial_boards", label: "T13: Editorial Board / Reviewer" },
+      { id: "t14", key: "table_14_guest_lectures_delivered", label: "T14: Guest Lectures Delivered" },
+      { id: "t15", key: "table_15_sessional_convener", label: "T15: Sessional Convener / Chair" },
+      { id: "t16", key: "table_16_administrative_responsibilities", label: "T16: Administrative Responsibilities" },
+      { id: "t17", key: "table_17_faculty_awards", label: "T17: Awards & Achievements" },
+      { id: "t18", key: "table_18_consultancy_revenue", label: "T18: Consultancy Revenue" },
+    ],
+  },
+  {
+    id: "group-4",
+    name: "4. Academic Programs & FDPs",
+    tables: [
+      { id: "t19", key: "table_19_student_seminars_workshops", label: "T19: Student Seminars / Workshops" },
+      { id: "t20", key: "table_20_remedial_classes", label: "T20: Remedial Classes" },
+      { id: "t21", key: "table_21_fdp_conducted", label: "T21: FDPs Conducted" },
+      { id: "t22", key: "table_22_fdp_participated", label: "T22: External FDP Participation" },
+      { id: "t23", key: "table_23_eminent_guest_lectures", label: "T23: Eminent Guest Lectures" },
+      { id: "t24", key: "table_24_crt_programs", label: "T24: CRT Programs Conducted" },
+      { id: "t25", key: "table_25_placement_drives", label: "T25: Campus Placement Drives" },
+      { id: "t26", key: "table_26_webinars_organized", label: "T26: Webinars Organized" },
+    ],
+  },
+  {
+    id: "group-5",
+    name: "5. Students, Visits & Alumni",
+    tables: [
+      { id: "t27", key: "table_27_mous", label: "T27: Departmental MoUs" },
+      { id: "t28", key: "table_28_student_research_projects", label: "T28: Student Research Projects" },
+      { id: "t29", key: "table_29_student_awards", label: "T29: Student Awards & Achievements" },
+      { id: "t30", key: "table_30_student_backlogs", label: "T30: Details of Student Backlogs" },
+      { id: "t31", key: "table_31_student_external_seminars", label: "T31: External Seminars / Workshops" },
+      { id: "t32", key: "table_32_industrial_visits", label: "T32: Students Industrial Visits" },
+      { id: "t33", key: "table_33_student_activities", label: "T33: Student Activities" },
+      { id: "t34", key: "table_34_alumni_info", label: "T34: Alumni Information" },
+    ],
+  },
+];

@@ -4,18 +4,26 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Master Table: accreditation_nodes
 -- Acts as the single source of truth for UI states, status, and notes.
+-- Supports annual frameworks (NBA, NAAC with quarter = NULL) and quarterly cycles (IQAC with quarter = 'Q1', 'Q2', etc.).
 CREATE TABLE accreditation_nodes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     framework TEXT NOT NULL,
     academic_year TEXT NOT NULL,
+    quarter TEXT,
     node_id TEXT NOT NULL,
     status TEXT DEFAULT 'pending',
     introductory_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(framework, academic_year, node_id)
+    UNIQUE NULLS NOT DISTINCT (framework, academic_year, quarter, node_id)
 );
 ALTER TABLE accreditation_nodes DISABLE ROW LEVEL SECURITY;
+
+-- MIGRATION SCRIPT (if upgrading an existing database):
+-- ALTER TABLE accreditation_nodes ADD COLUMN IF NOT EXISTS quarter TEXT;
+-- ALTER TABLE accreditation_nodes DROP CONSTRAINT IF EXISTS accreditation_nodes_framework_academic_year_node_id_key;
+-- ALTER TABLE accreditation_nodes ADD CONSTRAINT accreditation_nodes_framework_academic_year_quarter_node_id_key 
+-- UNIQUE NULLS NOT DISTINCT (framework, academic_year, quarter, node_id);
 
 -- 2. Evidence Links
 -- Stores URLs and titles associated with specific nodes.

@@ -60,7 +60,7 @@ export default function FrameworkSelectionPage() {
 
   const handleEnterWorkspace = (frameworkId: string) => {
     if (frameworkId.toLowerCase() === "iqac") {
-      router.push(`/framework/iqac/${selectedYear}/${selectedQuarter}`);
+      router.push(`/framework/iqac/${selectedYear}/${selectedQuarter}/part-a/t1`);
     } else {
       router.push(`/framework/${frameworkId.toLowerCase()}/${selectedYear}`);
     }

@@ -8,6 +8,7 @@ import Link from "next/link";
 import guidelinesData from "@/data/guidelines.json";
 import { useProgress } from "@/context/ProgressContext";
 import StatusIcon from "./StatusIcon";
+import { IQAC_TABLE_GROUPS } from "@/lib/iqacTableConfigs";
 
 type SubSubCriterion = {
   Title: string;
@@ -64,6 +65,32 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // IQAC Navigation States
+  const [isPartAExpanded, setIsPartAExpanded] = useState(true);
+  const [expandedIqacGroups, setExpandedIqacGroups] = useState<Record<string, boolean>>({
+    "group-1": true,
+    "group-2": false,
+    "group-3": false,
+    "group-4": false,
+    "group-5": false,
+  });
+
+  // Auto-expand group of active table based on current URL path
+  useEffect(() => {
+    if (isIqac && pathname) {
+      const match = pathname.match(/\/part-a\/(t\d+)/);
+      if (match) {
+        const tableId = match[1];
+        IQAC_TABLE_GROUPS.forEach((g) => {
+          if (g.tables.some((t) => t.id === tableId)) {
+            setExpandedIqacGroups((prev) => ({ ...prev, [g.id]: true }));
+            setIsPartAExpanded(true);
+          }
+        });
+      }
+    }
+  }, [isIqac, pathname]);
 
   // Layout states
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -241,33 +268,131 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
 
           <div className="p-3 flex-1">
             {isIqac ? (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
+                {/* 1. Part A: Data Tables Accordion */}
+                <div className="border border-border rounded-xl overflow-hidden bg-card/40">
+                  <button
+                    onClick={() => setIsPartAExpanded(!isPartAExpanded)}
+                    className="w-full flex items-center justify-between p-3 text-sm font-semibold text-foreground hover:bg-surface-alt transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Table className="w-4 h-4 text-accent" />
+                      <span>Part A: Data Tables</span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {isPartAExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isPartAExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden border-t border-border/60 divide-y divide-border/40 bg-surface/30"
+                      >
+                        {IQAC_TABLE_GROUPS.map((group) => {
+                          const isGroupOpen = !!expandedIqacGroups[group.id];
+                          const matchingTables = group.tables.filter((t) =>
+                            matchesSearch(t.label, searchQuery)
+                          );
+
+                          if (searchQuery && matchingTables.length === 0) return null;
+
+                          return (
+                            <div key={group.id} className="text-xs">
+                              <button
+                                onClick={() =>
+                                  setExpandedIqacGroups((prev) => ({
+                                    ...prev,
+                                    [group.id]: !prev[group.id],
+                                  }))
+                                }
+                                className="w-full flex items-center justify-between px-3.5 py-2 text-muted-foreground hover:text-foreground hover:bg-surface-alt/70 transition-colors font-medium text-left"
+                              >
+                                <span className="truncate">{group.name}</span>
+                                <span className="text-muted-foreground shrink-0 ml-1">
+                                  {isGroupOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </span>
+                              </button>
+
+                              <AnimatePresence initial={false}>
+                                {isGroupOpen && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.12 }}
+                                    className="overflow-hidden bg-background/50 pl-3 pr-2 py-1 space-y-0.5"
+                                  >
+                                    {(searchQuery ? matchingTables : group.tables).map((t) => {
+                                      const href = `/framework/iqac/${year}/${quarter}/part-a/${t.id}`;
+                                      const isActive = pathname === href || pathname?.endsWith(`/part-a/${t.id}`);
+
+                                      return (
+                                        <Link
+                                          key={t.id}
+                                          href={href}
+                                          className={`block px-2.5 py-1.5 rounded-lg text-xs transition-colors truncate ${
+                                            isActive
+                                              ? "bg-accent text-white font-semibold shadow-xs"
+                                              : "text-muted-foreground hover:text-foreground hover:bg-surface-alt"
+                                          }`}
+                                          title={t.label}
+                                        >
+                                          {t.label}
+                                        </Link>
+                                      );
+                                    })}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* 2. SWOC Analysis */}
                 <Link
-                  href={`/framework/iqac/${year}/${quarter}`}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all bg-accent/10 text-accent border border-accent/20"
+                  href={`/framework/iqac/${year}/${quarter}/swoc`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                    pathname?.endsWith("/swoc")
+                      ? "bg-accent text-white border-accent shadow-xs"
+                      : "bg-card/40 border-border text-foreground hover:bg-surface-alt"
+                  }`}
                 >
-                  <Table className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Part A: 34 Data Tables</span>
-                </Link>
-                <Link
-                  href={`/framework/iqac/${year}/${quarter}`}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
-                >
-                  <FileText className="w-4 h-4 shrink-0 text-accent" />
+                  <FileText className="w-4 h-4 shrink-0" />
                   <span className="truncate">SWOC Analysis</span>
                 </Link>
+
+                {/* 3. Part B: AAA Dept Rubrics */}
                 <Link
-                  href={`/framework/iqac/${year}/${quarter}`}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
+                  href={`/framework/iqac/${year}/${quarter}/part-b`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                    pathname?.endsWith("/part-b")
+                      ? "bg-accent text-white border-accent shadow-xs"
+                      : "bg-card/40 border-border text-foreground hover:bg-surface-alt"
+                  }`}
                 >
-                  <Award className="w-4 h-4 shrink-0 text-accent" />
+                  <Award className="w-4 h-4 shrink-0" />
                   <span className="truncate">Part B: AAA Dept Rubrics</span>
                 </Link>
+
+                {/* 4. Part C: AAA Inst Rubrics */}
                 <Link
-                  href={`/framework/iqac/${year}/${quarter}`}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
+                  href={`/framework/iqac/${year}/${quarter}/part-c`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                    pathname?.endsWith("/part-c")
+                      ? "bg-accent text-white border-accent shadow-xs"
+                      : "bg-card/40 border-border text-foreground hover:bg-surface-alt"
+                  }`}
                 >
-                  <Building2 className="w-4 h-4 shrink-0 text-accent" />
+                  <Building2 className="w-4 h-4 shrink-0" />
                   <span className="truncate">Part C: AAA Inst Rubrics</span>
                 </Link>
               </div>
