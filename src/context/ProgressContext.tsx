@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import guidelinesData from "@/data/guidelines.json";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export type Status = "pending" | "ongoing" | "completed";
@@ -27,6 +27,9 @@ interface ProgressContextType {
   completedSubSubs: number;
   ongoingSubSubs: number;
   ensureNodeExists: (nodeId: string, overrideStatus?: Status, overrideNotes?: string) => Promise<string>;
+  quarter?: string;
+  framework?: string;
+  year?: string;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -93,8 +96,20 @@ const computeTableStatus = (data: any): Status => {
 
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const params = useParams();
-  const frameworkType = (params?.type as string) || "NBA";
-  const academicYear = (params?.year as string) || "2025-26";
+  const pathname = usePathname();
+
+  // Dynamic Framework and Quarterly Cycle resolution
+  const isIqac = (params?.type as string)?.toLowerCase() === "iqac" || pathname?.includes("/iqac/");
+  const rawFramework = (params?.type as string) || (isIqac ? "IQAC" : "NBA");
+  const frameworkType = rawFramework.toUpperCase();
+
+  // If path is /framework/iqac/[year]/[quarter], parse parameters cleanly
+  const pathSegments = pathname ? pathname.split("/").filter(Boolean) : [];
+  const rawYear = (params?.year as string) || (isIqac && pathSegments[2] ? pathSegments[2] : "2025-26");
+  const quarter = (params?.quarter as string) || (isIqac && pathSegments[3] ? pathSegments[3] : "");
+
+  // For IQAC, concatenate year and quarter (e.g., 2025-26-Q1) to reuse the exact same DB schema without SQL changes
+  const academicYear = isIqac && quarter ? `${rawYear}-${quarter}` : rawYear;
 
   const [statuses, setStatuses] = useState<Record<string, Status>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -315,7 +330,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       totalSubSubs: total,
       completedSubSubs: completedCount,
       ongoingSubSubs: ongoingCount,
-      ensureNodeExists
+      ensureNodeExists,
+      quarter,
+      framework: frameworkType,
+      year: rawYear
     }}>
       {children}
     </ProgressContext.Provider>

@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronDown, Search, CheckCircle2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { ChevronRight, ChevronDown, Search, CheckCircle2, PanelLeftClose, PanelLeftOpen, Table, FileText, Award, Building2 } from "lucide-react";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import guidelinesData from "@/data/guidelines.json";
 import { useProgress } from "@/context/ProgressContext";
@@ -43,11 +43,15 @@ function matchesSearch(text: string, query: string): boolean {
 export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const currentId = params?.id as string | undefined;
   
-  const type = (params?.type as string) || "nba";
-  const year = (params?.year as string) || "2025-26";
-  const basePath = `/framework/${type}/${year}`;
+  const isIqac = (params?.type as string)?.toLowerCase() === "iqac" || pathname?.includes("/iqac/");
+  const pathSegments = pathname ? pathname.split("/").filter(Boolean) : [];
+  const type = (params?.type as string) || (isIqac ? "iqac" : "nba");
+  const year = (params?.year as string) || (isIqac && pathSegments[2] ? pathSegments[2] : "2025-26");
+  const quarter = (params?.quarter as string) || (isIqac && pathSegments[3] ? pathSegments[3] : "Q1");
+  const basePath = isIqac ? `/framework/iqac/${year}/${quarter}` : `/framework/${type}/${year}`;
   
   const { getNodeStatus, totalSubSubs, completedSubSubs } = useProgress();
   const progressPercent = totalSubSubs > 0 ? Math.round((completedSubSubs / totalSubSubs) * 100) : 0;
@@ -204,24 +208,30 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
         <div style={{ width: sidebarWidth }} className="h-full overflow-y-auto flex flex-col">
           <div className="p-5 border-b border-border shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-xl font-medium tracking-tight text-foreground">Guidelines</h1>
-              <span className="text-xs font-medium text-accent bg-accent-subtle px-2 py-0.5 rounded-full">{isMounted ? progressPercent : 0}%</span>
+              <h1 className="text-xl font-medium tracking-tight text-foreground">
+                {isIqac ? "IQAC Audit" : "Guidelines"}
+              </h1>
+              <span className="text-xs font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
+                {isIqac ? quarter : `${isMounted ? progressPercent : 0}%`}
+              </span>
             </div>
             
             {/* Minimal Progress Bar */}
-            <div className="w-full bg-surface-alt h-1.5 rounded-full mb-4 overflow-hidden">
-              <div 
-                className="bg-accent h-full rounded-full transition-all duration-500 ease-out" 
-                style={{ width: `${isMounted ? progressPercent : 0}%` }} 
-              />
-            </div>
+            {!isIqac && (
+              <div className="w-full bg-surface-alt h-1.5 rounded-full mb-4 overflow-hidden">
+                <div 
+                  className="bg-accent h-full rounded-full transition-all duration-500 ease-out" 
+                  style={{ width: `${isMounted ? progressPercent : 0}%` }} 
+                />
+              </div>
+            )}
             
             {/* Minimal Search Input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
               <input
                 type="text"
-                placeholder="Search guidelines..."
+                placeholder={isIqac ? "Search IQAC sections..." : "Search guidelines..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-md bg-surface focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all text-foreground placeholder-muted"
@@ -230,7 +240,39 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
           </div>
 
           <div className="p-3 flex-1">
-            {filteredTree.map((c, cIdx) => {
+            {isIqac ? (
+              <div className="space-y-1.5">
+                <Link
+                  href={`/framework/iqac/${year}/${quarter}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all bg-accent/10 text-accent border border-accent/20"
+                >
+                  <Table className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Part A: 34 Data Tables</span>
+                </Link>
+                <Link
+                  href={`/framework/iqac/${year}/${quarter}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
+                >
+                  <FileText className="w-4 h-4 shrink-0 text-accent" />
+                  <span className="truncate">SWOC Analysis</span>
+                </Link>
+                <Link
+                  href={`/framework/iqac/${year}/${quarter}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
+                >
+                  <Award className="w-4 h-4 shrink-0 text-accent" />
+                  <span className="truncate">Part B: AAA Dept Rubrics</span>
+                </Link>
+                <Link
+                  href={`/framework/iqac/${year}/${quarter}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-surface-alt border border-transparent"
+                >
+                  <Building2 className="w-4 h-4 shrink-0 text-accent" />
+                  <span className="truncate">Part C: AAA Inst Rubrics</span>
+                </Link>
+              </div>
+            ) : (
+              filteredTree.map((c, cIdx) => {
               const cId = c.id;
               const isExpanded = expanded[cId];
               const isActive = currentId === cId;
@@ -346,7 +388,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                   </AnimatePresence>
                 </div>
               );
-            })}
+            }))}
           </div>
 
           {/* Settings & Export */}

@@ -7,14 +7,18 @@ import { ScoreProvider } from "@/context/ScoreContext";
 import CommandPalette from "./CommandPalette";
 import Link from "next/link";
 import { Home, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const params = useParams();
+  const pathname = usePathname();
   
-  const type = (params?.type as string) || "NBA";
-  const year = (params?.year as string) || "2025-26";
+  const isIqac = (params?.type as string)?.toLowerCase() === "iqac" || pathname?.includes("/iqac/");
+  const type = (params?.type as string) || (isIqac ? "IQAC" : "NBA");
+  const pathSegments = pathname ? pathname.split("/").filter(Boolean) : [];
+  const year = (params?.year as string) || (isIqac && pathSegments[2] ? pathSegments[2] : "2025-26");
+  const quarter = (params?.quarter as string) || (isIqac && pathSegments[3] ? pathSegments[3] : "");
 
   return (
     <ScoreProvider>
@@ -52,7 +56,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </h1>
                 <span className="text-muted hidden sm:inline-block">/</span>
                 <span className="text-sm font-semibold tracking-tight text-accent bg-accent-subtle px-2 py-0.5 rounded-md border border-border uppercase">
-                  {type} / {year}
+                  {type} / {year} {quarter ? `/ ${quarter}` : ""}
                 </span>
               </div>
             </header>

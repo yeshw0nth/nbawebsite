@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useParams } from "next/navigation";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getIQACTableConfig } from "@/lib/iqacTableConfigs";
 
 export default function SpreadsheetGrid({ 
   guidelineId,
@@ -35,8 +36,16 @@ export default function SpreadsheetGrid({
   // Define Columns & Titles
   let columns: (Column<any, any> & { accessorKey?: string })[] = [];
   let tableTitle = "Evaluation Data Grid";
+  let defaultRowsData: any[] | undefined = undefined;
 
-  if (tableKey === "1.1.5.1" || tableKey === "1.1.5") {
+  // Check IQAC Table Configurations
+  const iqacConfig = getIQACTableConfig(tableKey);
+
+  if (iqacConfig) {
+    tableTitle = iqacConfig.title;
+    columns = iqacConfig.columns;
+    defaultRowsData = iqacConfig.defaultRows;
+  } else if (tableKey === "1.1.5.1" || tableKey === "1.1.5") {
     tableTitle = "Table 1.1.5.1: Mapping of PEOs with Mission";
     columns = [
       { ...keyColumn("peo", textColumn), title: "PEO Statements", accessorKey: "peo" },
@@ -107,7 +116,9 @@ export default function SpreadsheetGrid({
 
   // Initialization
   useEffect(() => {
-    let defaultData = Array(5).fill({});
+    let defaultData = defaultRowsData && defaultRowsData.length > 0 
+      ? defaultRowsData 
+      : Array(5).fill({});
     const contextData = tableData?.[guidelineId]?.[tableKey];
     const initialData = (contextData && Array.isArray(contextData) && contextData.length > 0) 
       ? contextData 
@@ -184,7 +195,7 @@ export default function SpreadsheetGrid({
       styles: { fontSize: 8 }
     });
     
-    doc.save(`${tableKey.replace(/[^a-zA-Z0-9]/g, "_")}_NBA_Export.pdf`);
+    doc.save(`${tableKey.replace(/[^a-zA-Z0-9]/g, "_")}_${frameworkType}_Export.pdf`);
   };
 
   const handleSave = async () => {

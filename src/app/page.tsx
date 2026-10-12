@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Award, BookOpen, ShieldCheck, ArrowRight, Calendar, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Award, BookOpen, ShieldCheck, ArrowRight, Calendar, CheckCircle2, Clock } from "lucide-react";
 
 const ACADEMIC_YEARS = [
   "2025-26",
@@ -16,6 +16,13 @@ const ACADEMIC_YEARS = [
   "2032-33",
   "2033-34",
   "2034-35"
+];
+
+const AUDIT_QUARTERS = [
+  { id: "Q1", label: "Q1 (July-Sept)" },
+  { id: "Q2", label: "Q2 (Oct-Dec)" },
+  { id: "Q3", label: "Q3 (Jan-Mar)" },
+  { id: "Q4", label: "Q4 (Apr-June)" }
 ];
 
 const FRAMEWORKS = [
@@ -39,7 +46,7 @@ const FRAMEWORKS = [
     id: "iqac",
     name: "IQAC",
     title: "Internal Quality Assurance Cell",
-    description: "Departmental quality enhancement, academic and administrative audit (AAA), and internal benchmarks.",
+    description: "Quarterly Academic and Administrative Audit (AAA), 34 data tables, SWOC analysis, and committee rubrics.",
     icon: ShieldCheck,
     available: true,
   }
@@ -49,9 +56,14 @@ export default function FrameworkSelectionPage() {
   const router = useRouter();
   const [selectedFramework, setSelectedFramework] = useState("nba");
   const [selectedYear, setSelectedYear] = useState("2025-26");
+  const [selectedQuarter, setSelectedQuarter] = useState("Q1");
 
   const handleEnterWorkspace = (frameworkId: string) => {
-    router.push(`/framework/${frameworkId.toLowerCase()}/${selectedYear}`);
+    if (frameworkId.toLowerCase() === "iqac") {
+      router.push(`/framework/iqac/${selectedYear}/${selectedQuarter}`);
+    } else {
+      router.push(`/framework/${frameworkId.toLowerCase()}/${selectedYear}`);
+    }
   };
 
   return (
@@ -63,7 +75,7 @@ export default function FrameworkSelectionPage() {
         className="w-full max-w-5xl"
       >
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold tracking-wide uppercase mb-4">
             Autonomous Institution • Accredited by NAAC & NBA
           </div>
@@ -75,26 +87,60 @@ export default function FrameworkSelectionPage() {
           </p>
         </div>
 
-        {/* Global Academic Year Selector Bar */}
-        <div className="bg-card border border-border p-4 rounded-xl shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Calendar className="w-4 h-4 text-accent" />
-            <span>Target Academic Year:</span>
+        {/* Configuration Bar: Academic Year & Conditional IQAC Audit Cycle */}
+        <div className="bg-card border border-border p-5 rounded-2xl shadow-sm mb-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Calendar className="w-4 h-4 text-accent" />
+              <span>Target Academic Year:</span>
+            </div>
+            <div className="w-full sm:w-auto">
+              <select
+                id="academic-year-selector"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full sm:w-56 px-3.5 py-2 text-sm border border-border rounded-lg bg-surface text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+              >
+                {ACADEMIC_YEARS.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <select
-              id="academic-year-selector"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full sm:w-48 px-3.5 py-2 text-sm border border-border rounded-lg bg-surface text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
-            >
-              {ACADEMIC_YEARS.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
+
+          {/* Conditional Audit Cycle for IQAC */}
+          <AnimatePresence>
+            {selectedFramework === "iqac" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="pt-4 border-t border-border/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-accent">
+                  <Clock className="w-4 h-4" />
+                  <span>Audit Cycle (Quarterly):</span>
+                </div>
+                <div className="w-full sm:w-auto">
+                  <select
+                    id="audit-cycle-selector"
+                    value={selectedQuarter}
+                    onChange={(e) => setSelectedQuarter(e.target.value)}
+                    className="w-full sm:w-56 px-3.5 py-2 text-sm border border-accent/40 rounded-lg bg-accent/5 text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+                  >
+                    {AUDIT_QUARTERS.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Framework Cards Grid */}
@@ -151,7 +197,9 @@ export default function FrameworkSelectionPage() {
                         : "bg-surface-alt hover:bg-accent hover:text-white text-foreground border border-border"
                     }`}
                   >
-                    <span>Enter {fw.name}</span>
+                    <span>
+                      Enter {fw.name} {fw.id === "iqac" ? `(${selectedQuarter})` : ""}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
