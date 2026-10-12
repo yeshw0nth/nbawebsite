@@ -28,7 +28,7 @@ export default function TreeVisualizer() {
   const data = useMemo(() => {
     const root: TreeNode = {
       id: "root",
-      name: "SAR 1000 Marks",
+      name: "Accreditation Framework Matrix",
       type: "root",
       children: guidelinesData.map(c => ({
         id: c.id,

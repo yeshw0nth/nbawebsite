@@ -1,17 +1,16 @@
 import guidelinesData from "@/data/guidelines.json";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SubComponentsAccordion from "./SubComponentsAccordion";
 import BreadcrumbNav from "@/app/components/BreadcrumbNav";
-import RadialProgress from "@/app/components/RadialProgress";
-import FormulaCalculator from "@/app/components/calculators/FormulaCalculator";
+import ProgressBar from "@/app/components/ProgressBar";
 import ResourceInteractive from "../../resources/[criterionId]/[guidelineId]/ResourceInteractive";
 import EvaluationGuidelineItem from "@/app/components/criteria/EvaluationGuidelineItem";
 
 type SubSubCriterion = {
   Title: string;
-  Marks: number;
+  Marks?: number;
   Guidelines_and_Exhibits: {
     Evaluation_Guidelines: string;
     Exhibits_Context_to_be_Observed_Assessed: string;
@@ -20,13 +19,13 @@ type SubSubCriterion = {
 
 type SubCriterion = {
   Title: string;
-  Marks: number;
+  Marks?: number;
   "Sub-Sub-Criteria"?: SubSubCriterion[];
 };
 
 type Criterion = {
   Criterion: string;
-  Marks: number;
+  Marks?: number;
   "Sub-Criteria": SubCriterion[];
 };
 
@@ -95,7 +94,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
       <div className="mb-8">
         <Link 
           href={parentUrl}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#171717] transition-colors mb-4"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft size={16} />
           Back
@@ -103,31 +102,47 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
         <BreadcrumbNav />
       </div>
 
-      <header className="mb-12 border-b border-gray-100 pb-8">
+      <header className="mb-10 pb-6 border-b border-border">
         {node.type === 'criterion' && (
-          <RadialProgress criterionId={nodeId} title={(node.data as Criterion).Criterion} />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-card border border-border rounded-2xl shadow-sm">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-1 rounded-md border border-accent/20">
+                Criterion Overview
+              </span>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground mt-2.5">
+                {(node.data as Criterion).Criterion}
+              </h1>
+            </div>
+            <ProgressBar nodeId={nodeId} barWidthClass="w-32 sm:w-44" className="pt-2 sm:pt-0" />
+          </div>
         )}
         
         {node.type === 'sub' && (
-          <>
-            <div className="flex items-start justify-between mb-3 gap-6">
-              <h2 className="text-2xl font-semibold tracking-tight text-[#171717]">{(node.data as SubCriterion).Title}</h2>
-              <span className="bg-indigo-50 text-indigo-600 font-medium px-3 py-1 rounded-full text-sm shrink-0 mt-1">
-                {(node.data as SubCriterion).Marks} Marks
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-1 rounded-md border border-accent/20">
+                Sub-Criterion
               </span>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground mt-1.5">
+                {(node.data as SubCriterion).Title}
+              </h2>
             </div>
-          </>
+            <ProgressBar nodeId={nodeId} barWidthClass="w-28 sm:w-36" />
+          </div>
         )}
 
         {node.type === 'subsub' && (
-          <>
-            <div className="flex items-start justify-between mb-3 gap-6">
-              <h2 className="text-2xl font-semibold tracking-tight text-[#171717]">{(node.data as SubSubCriterion).Title}</h2>
-              <span className="bg-indigo-50 text-indigo-600 font-medium px-3 py-1 rounded-full text-sm shrink-0 mt-1">
-                {(node.data as SubSubCriterion).Marks} Marks
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-1 rounded-md border border-accent/20">
+                Sub-Sub-Criterion
               </span>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground mt-1.5">
+                {(node.data as SubSubCriterion).Title}
+              </h2>
             </div>
-          </>
+            <ProgressBar nodeId={nodeId} barWidthClass="w-24 sm:w-32" />
+          </div>
         )}
       </header>
 
@@ -163,7 +178,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            <div className="mt-12 pt-8 border-t border-gray-100">
+            <div className="mt-12 pt-8 border-t border-border">
               <ResourceInteractive globalGuidelineId={nodeId} />
             </div>
           </>
@@ -171,26 +186,30 @@ export default async function CriteriaPage({ params }: { params: Promise<{ id: s
 
         {node.type === 'criterion' && (
           <div>
-            <h3 className="text-lg font-medium tracking-tight mb-4 text-[#171717]">Sub-components</h3>
+            <h3 className="text-lg font-medium tracking-tight mb-4 text-foreground">Sub-components</h3>
             <SubComponentsAccordion items={(node.data as Criterion)["Sub-Criteria"]} parentId={nodeId} />
           </div>
         )}
 
         {node.type === 'sub' && (
           <div>
-            <FormulaCalculator nodeId={nodeId} maxMarks={(node.data as SubCriterion).Marks} />
-            <h3 className="text-lg font-medium tracking-tight mb-4 text-[#171717]">Detailed Items</h3>
-            <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white">
-              {(node.data as SubCriterion)["Sub-Sub-Criteria"]?.map((ss, idx) => (
-                <Link 
-                  key={idx} 
-                  href={`${basePath}/criteria/${nodeId}-ss${idx + 1}`}
-                  className="flex items-center justify-between p-5 bg-white transition-colors hover:bg-indigo-50 group"
-                >
-                  <p className="font-medium text-sm text-[#171717] group-hover:text-indigo-600 transition-colors">{ss.Title}</p>
-                  <span className="text-sm text-gray-500 font-medium shrink-0 ml-4 group-hover:text-indigo-500 transition-colors">{ss.Marks} Marks</span>
-                </Link>
-              ))}
+            <h3 className="text-lg font-medium tracking-tight mb-4 text-foreground">Detailed Items</h3>
+            <div className="border border-border rounded-xl divide-y divide-border bg-card shadow-sm overflow-hidden">
+              {(node.data as SubCriterion)["Sub-Sub-Criteria"]?.map((ss, idx) => {
+                const ssId = `${nodeId}-ss${idx + 1}`;
+                return (
+                  <Link 
+                    key={idx} 
+                    href={`${basePath}/criteria/${ssId}`}
+                    className="flex items-center justify-between p-4.5 bg-card transition-colors hover:bg-muted/40 group"
+                  >
+                    <p className="font-medium text-sm text-foreground group-hover:text-accent transition-colors pr-4 leading-snug">
+                      {ss.Title}
+                    </p>
+                    <ProgressBar nodeId={ssId} barWidthClass="w-20 sm:w-28" />
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

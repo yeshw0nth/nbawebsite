@@ -47,8 +47,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="h-4 w-px bg-border mx-1" />
 
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-medium tracking-tight text-foreground truncate hidden sm:block">
-                  NBA Accreditation Data Automation and Evidence Management System
+                <h1 className="text-sm font-semibold tracking-tight text-foreground truncate">
+                  GPREC ME Dept Accreditation System
                 </h1>
                 <span className="text-muted hidden sm:inline-block">/</span>
                 <span className="text-sm font-semibold tracking-tight text-accent bg-accent-subtle px-2 py-0.5 rounded-md border border-border uppercase">

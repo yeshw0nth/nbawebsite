@@ -7,6 +7,12 @@ import { supabase } from "@/lib/supabaseClient";
 
 export type Status = "pending" | "ongoing" | "completed";
 
+export type NodeProgress = {
+  total: number;
+  completed: number;
+  percentage: number;
+};
+
 interface ProgressContextType {
   statuses: Record<string, Status>;
   notes: Record<string, string>;
@@ -15,6 +21,7 @@ interface ProgressContextType {
   updateNote: (guidelineId: string, note: string) => void;
   updateTableData: (guidelineId: string, tableId: string, data: any) => void;
   getNodeStatus: (nodeId: string) => Status;
+  getNodeProgress: (nodeId: string) => NodeProgress;
   isSubSubCompleted: (ssId: string) => boolean;
   totalSubSubs: number;
   completedSubSubs: number;
@@ -23,6 +30,38 @@ interface ProgressContextType {
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
+
+// Map of any node ID (criterion, sub, sub-sub) to its array of leaf guideline IDs (A, B, C...)
+const nodeToLeavesMap: Record<string, string[]> = {};
+
+(guidelinesData as any[]).forEach(c => {
+  const cId = c.id;
+  if (!nodeToLeavesMap[cId]) nodeToLeavesMap[cId] = [];
+
+  c["Sub-Criteria"]?.forEach((s: any) => {
+    const sId = s.id;
+    if (!nodeToLeavesMap[sId]) nodeToLeavesMap[sId] = [];
+
+    (s["Sub-Sub-Criteria"] || []).forEach((ss: any) => {
+      const ssId = ss.id;
+      if (!nodeToLeavesMap[ssId]) nodeToLeavesMap[ssId] = [];
+
+      const lines = (ss.Guidelines_and_Exhibits?.Evaluation_Guidelines || "")
+        .split("\n")
+        .filter((l: string) => l.trim());
+
+      lines.forEach((l: string, idx: number) => {
+        const match = l.match(/^([A-Z])\./);
+        const gId = match ? match[1] : (idx + 1).toString();
+        const leafId = `${ssId}-${gId}`;
+
+        nodeToLeavesMap[ssId].push(leafId);
+        nodeToLeavesMap[sId].push(leafId);
+        nodeToLeavesMap[cId].push(leafId);
+      });
+    });
+  });
+});
 
 const computeTableStatus = (data: any): Status => {
   if (!data) return "pending";
@@ -214,6 +253,29 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return "pending";
   };
 
+  const getNodeProgress = (nodeId: string): NodeProgress => {
+    const leaves = nodeToLeavesMap[nodeId];
+    if (!leaves || leaves.length === 0) {
+      const isCompleted = statuses[nodeId] === "completed";
+      return {
+        total: 1,
+        completed: isCompleted ? 1 : 0,
+        percentage: isCompleted ? 100 : 0
+      };
+    }
+
+    let completed = 0;
+    for (const leafId of leaves) {
+      if (statuses[leafId] === "completed") {
+        completed++;
+      }
+    }
+
+    const total = leaves.length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percentage };
+  };
+
   const isSubSubCompleted = (ssId: string) => getNodeStatus(ssId) === "completed";
 
   let total = 0;
@@ -248,6 +310,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       updateNote,
       updateTableData,
       getNodeStatus,
+      getNodeProgress,
       isSubSubCompleted,
       totalSubSubs: total,
       completedSubSubs: completedCount,

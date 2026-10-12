@@ -4,19 +4,19 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import ProgressBar from "@/app/components/ProgressBar";
 
 type SubSubCriterion = {
   Title: string;
-  Marks: number;
+  Marks?: number;
 };
 
 type SubCriterion = {
   Title: string;
-  Marks: number;
+  Marks?: number;
   "Sub-Sub-Criteria"?: SubSubCriterion[];
 };
-
-import { useParams } from "next/navigation";
 
 export default function SubComponentsAccordion({
   items,
@@ -36,7 +36,7 @@ export default function SubComponentsAccordion({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white">
+    <div className="border border-border rounded-xl divide-y divide-border bg-card shadow-sm overflow-hidden">
       {items.map((sub, idx) => {
         const isExpanded = !!expanded[idx];
         const hasChildren = sub["Sub-Sub-Criteria"] && sub["Sub-Sub-Criteria"].length > 0;
@@ -46,22 +46,24 @@ export default function SubComponentsAccordion({
           <div key={idx} className="flex flex-col">
             {/* Header / Trigger */}
             <div
-              className={`flex items-center justify-between p-4 cursor-pointer transition-colors hover:bg-[#F3F4F6] ${
-                isExpanded ? "bg-[#F3F4F6]" : "bg-white"
+              className={`flex items-center justify-between p-4 cursor-pointer transition-colors hover:bg-muted/40 ${
+                isExpanded ? "bg-muted/30" : "bg-card"
               }`}
               onClick={() => toggleExpand(idx)}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 pr-4">
                 {hasChildren && (
-                  <span className="text-gray-400">
+                  <span className="text-muted-foreground shrink-0">
                     {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                   </span>
                 )}
-                <p className="font-medium text-sm text-[#171717]">{sub.Title}</p>
+                <p className="font-medium text-sm text-foreground leading-snug">
+                  {sub.Title}
+                </p>
               </div>
-              <span className="text-sm text-gray-500 font-medium whitespace-nowrap ml-4">
-                {sub.Marks} Marks
-              </span>
+
+              {/* Synchronized Real-Time Progress Bar */}
+              <ProgressBar nodeId={subId} barWidthClass="w-20 sm:w-28" />
             </div>
 
             {/* Accordion Content */}
@@ -72,23 +74,23 @@ export default function SubComponentsAccordion({
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.15, ease: "easeInOut" }}
-                  className="overflow-hidden bg-white"
+                  className="overflow-hidden bg-card"
                 >
-                  <div className="border-t border-gray-100 divide-y divide-gray-50 ml-8">
+                  <div className="border-t border-border divide-y divide-border/60 pl-6 sm:pl-8 bg-muted/10">
                     {sub["Sub-Sub-Criteria"]!.map((ss, ssIdx) => {
                       const ssId = `${subId}-ss${ssIdx + 1}`;
                       return (
                         <Link
                           key={ssIdx}
                           href={`${basePath}/criteria/${ssId}`}
-                          className="flex items-center justify-between p-3 transition-colors hover:bg-indigo-50 group"
+                          className="flex items-center justify-between p-3.5 transition-colors hover:bg-muted/40 group"
                         >
-                          <p className="text-sm text-gray-600 group-hover:text-indigo-600 transition-colors">
+                          <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors pr-4 leading-snug">
                             {ss.Title}
                           </p>
-                          <span className="text-xs text-gray-400 group-hover:text-indigo-500 transition-colors whitespace-nowrap ml-4">
-                            {ss.Marks} Marks
-                          </span>
+
+                          {/* Sub-Sub-Criterion Progress Bar */}
+                          <ProgressBar nodeId={ssId} barWidthClass="w-16 sm:w-24" />
                         </Link>
                       );
                     })}
