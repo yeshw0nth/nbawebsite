@@ -57,9 +57,9 @@ export default function ResourceInteractive({
 }: { 
   globalGuidelineId: string;
 }) {
-  const { getNodeStatus, notes, updateStatus, updateNote, ensureNodeExists, quarter } = useProgress();
+  const { getNodeStatus, notes, updateStatus, updateNote, ensureNodeExists, quarter, framework } = useProgress();
   const params = useParams();
-  const frameworkType = (params?.type as string) || "NBA";
+  const frameworkType = ((params?.type as string) || framework || "nba").toLowerCase();
   const academicYear = (params?.year as string) || "2025-26";
   
   const currentStatus = getNodeStatus(globalGuidelineId);
@@ -96,7 +96,7 @@ export default function ResourceInteractive({
       let query = supabase
         .from('accreditation_nodes')
         .select('id')
-        .eq('framework', frameworkType)
+        .ilike('framework', frameworkType)
         .eq('academic_year', academicYear)
         .eq('node_id', globalGuidelineId);
 
@@ -160,7 +160,46 @@ export default function ResourceInteractive({
       finalUrl = 'https://' + finalUrl;
     }
     
-    const nodeUuid = await ensureNodeExists(globalGuidelineId);
+    let nodeUuid = await ensureNodeExists(globalGuidelineId);
+
+    // Fallback: Query or upsert master node if UUID wasn't returned
+    if (!nodeUuid) {
+      let nodeQuery = supabase
+        .from('accreditation_nodes')
+        .select('id')
+        .ilike('framework', frameworkType)
+        .eq('academic_year', academicYear)
+        .eq('node_id', globalGuidelineId);
+
+      if (quarter) {
+        nodeQuery = nodeQuery.eq('quarter', quarter);
+      } else {
+        nodeQuery = nodeQuery.is('quarter', null);
+      }
+
+      const { data: existingNode } = await nodeQuery.maybeSingle();
+
+      if (existingNode) {
+        nodeUuid = (existingNode as any).id;
+      } else {
+        const { data: newNode } = await supabase
+          .from('accreditation_nodes')
+          .upsert({
+            framework: frameworkType,
+            academic_year: academicYear,
+            quarter: quarter ? quarter : null, // Explicitly pass null for NBA
+            node_id: globalGuidelineId,
+            status: currentStatus || 'pending',
+            introductory_notes: currentNote || null
+          } as any, { onConflict: 'framework,academic_year,quarter,node_id' })
+          .select('id')
+          .single();
+
+        if (newNode) {
+          nodeUuid = (newNode as any).id;
+        }
+      }
+    }
     
     if (editingLinkId) {
       // Update
@@ -229,7 +268,46 @@ export default function ResourceInteractive({
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
     setIsUploading(true);
-    const nodeUuid = await ensureNodeExists(globalGuidelineId);
+    let nodeUuid = await ensureNodeExists(globalGuidelineId);
+    
+    // Fallback if nodeUuid was not returned directly from state or upsert:
+    if (!nodeUuid) {
+      let nodeQuery = supabase
+        .from('accreditation_nodes')
+        .select('id')
+        .ilike('framework', frameworkType)
+        .eq('academic_year', academicYear)
+        .eq('node_id', globalGuidelineId);
+
+      if (quarter) {
+        nodeQuery = nodeQuery.eq('quarter', quarter);
+      } else {
+        nodeQuery = nodeQuery.is('quarter', null);
+      }
+
+      const { data: existingNode } = await nodeQuery.maybeSingle();
+
+      if (existingNode) {
+        nodeUuid = (existingNode as any).id;
+      } else {
+        const { data: newNode } = await supabase
+          .from('accreditation_nodes')
+          .upsert({
+            framework: frameworkType,
+            academic_year: academicYear,
+            quarter: quarter ? quarter : null, // Explicitly pass null for NBA
+            node_id: globalGuidelineId,
+            status: currentStatus || 'pending',
+            introductory_notes: currentNote || null
+          } as any, { onConflict: 'framework,academic_year,quarter,node_id' })
+          .select('id')
+          .single();
+
+        if (newNode) {
+          nodeUuid = (newNode as any).id;
+        }
+      }
+    }
     
     for (const f of acceptedFiles) {
       const filePath = `${frameworkType}/${academicYear}/${globalGuidelineId}/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;

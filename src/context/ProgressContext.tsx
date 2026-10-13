@@ -27,7 +27,7 @@ interface ProgressContextType {
   completedSubSubs: number;
   ongoingSubSubs: number;
   ensureNodeExists: (nodeId: string, overrideStatus?: Status, overrideNotes?: string) => Promise<string>;
-  quarter?: string;
+  quarter?: string | null;
   framework?: string;
   year?: string;
 }
@@ -100,13 +100,14 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
 
   // Dynamic Framework and Quarterly Cycle resolution
   const isIqac = (params?.type as string)?.toLowerCase() === "iqac" || pathname?.includes("/iqac/");
-  const rawFramework = (params?.type as string) || (isIqac ? "IQAC" : "NBA");
-  const frameworkType = rawFramework.toUpperCase();
+  const rawFramework = (params?.type as string) || (isIqac ? "iqac" : "nba");
+  const framework = rawFramework.toLowerCase();
 
   // If path is /framework/iqac/[year]/[quarter], parse parameters cleanly
   const pathSegments = pathname ? pathname.split("/").filter(Boolean) : [];
   const rawYear = (params?.year as string) || (isIqac && pathSegments[2] ? pathSegments[2] : "2025-26");
-  const quarter = (params?.quarter as string) || (isIqac && pathSegments[3] ? pathSegments[3] : "");
+  const urlQuarter = (params?.quarter as string) || (isIqac && pathSegments[3]?.startsWith("Q") ? pathSegments[3] : undefined);
+  const quarter: string | null = urlQuarter || null;
 
   // Academic year is cleanly stored without string concatenation
   const academicYear = rawYear;
@@ -132,12 +133,12 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       let nodesQuery = supabase
         .from("accreditation_nodes")
         .select("id, node_id, status, introductory_notes, quarter")
-        .eq("framework", frameworkType)
+        .ilike("framework", framework)
         .eq("academic_year", academicYear);
 
-      if (isIqac && quarter) {
+      if (quarter) {
         nodesQuery = nodesQuery.eq("quarter", quarter);
-      } else if (!isIqac) {
+      } else {
         nodesQuery = nodesQuery.is("quarter", null);
       }
 
@@ -146,12 +147,12 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       let tablesQuery = supabase
         .from("dynamic_spreadsheets")
         .select("table_identifier, grid_payload, accreditation_nodes!inner(framework, academic_year, quarter, node_id)")
-        .eq("accreditation_nodes.framework", frameworkType)
+        .ilike("accreditation_nodes.framework", framework)
         .eq("accreditation_nodes.academic_year", academicYear);
 
-      if (isIqac && quarter) {
+      if (quarter) {
         tablesQuery = tablesQuery.eq("accreditation_nodes.quarter", quarter);
-      } else if (!isIqac) {
+      } else {
         tablesQuery = tablesQuery.is("accreditation_nodes.quarter", null);
       }
 
@@ -190,15 +191,18 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     fetchData();
 
     return () => { isMounted = false; };
-  }, [frameworkType, academicYear, quarter, isIqac]);
+  }, [framework, academicYear, quarter]);
 
   const ensureNodeExists = async (nodeId: string, overrideStatus?: Status, overrideNotes?: string): Promise<string> => {
     const currentState = stateRef.current;
     
+    // Explicitly pass quarter: null if quarter is not present in URL parameters (e.g. NBA framework)
+    const activeQuarter = quarter ? quarter : null;
+
     const payload = {
-      framework: frameworkType,
+      framework: framework,
       academic_year: academicYear,
-      quarter: isIqac ? (quarter || "Q1") : null,
+      quarter: activeQuarter,
       node_id: nodeId,
       status: overrideStatus ?? (currentState.statuses[nodeId] || "pending"),
       introductory_notes: overrideNotes ?? (currentState.notes[nodeId] || null)
@@ -349,7 +353,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       ongoingSubSubs: ongoingCount,
       ensureNodeExists,
       quarter,
-      framework: frameworkType,
+      framework,
       year: rawYear
     }}>
       {children}
